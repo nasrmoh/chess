@@ -113,42 +113,31 @@ class BoardCore:
         Returns the legal moves for a given piece.
         Currently only returns valid moves as determined by the piece.
         In the future it will filter out moves that are illegal. i.e. a move that would lead to a checkmate.
-        Args:
-            piece (Piece | None): the given piece. If the piece does not exist returns the empty list.
-
-        Returns:
-            list[tuple[int, int]]: a list of legal moves positions stored as (row, col) tuples.
+ 
         """
         is_king = False
-        if piece is not None:
-            # first generate valid moves.
-            if piece.get_type() == "king":
-                is_king = True
-            valid_moves = piece.generate_valid_moves(self)
-            # ghost_board = VirtualBoard(self)
-            # now filter for legal moves
-            # go through each valid move and check if it is legal
-            legal_moves = []
-            for move in valid_moves:
-                ghost_piece = copy(piece)
-                ghost_board = VirtualBoard(self)
-                # apply the move
-                ghost_board.move_piece(ghost_piece, *move)
-                if not ghost_board.get_checking_pieces(
-                    team, enemy, move, is_king
-                ):  # king not in check
-                    legal_moves.append(move)
-            # This is done by simulating the move and checking if the king is in check
-            return legal_moves
-
-        else:
-            return []
+        legal_moves = []
+        # first generate valid moves.
+        if piece.get_type() == "king":
+            is_king = True
+        valid_moves = piece.generate_valid_moves(self)
+        # now filter for legal moves
+        for move in valid_moves:
+            ghost_piece = copy(piece)
+            ghost_board = VirtualBoard(self)
+            # apply the move
+            ghost_board.move_piece(ghost_piece, *move)
+            if not ghost_board.get_checking_pieces(
+                team, enemy, move, is_king
+            ):  # king not in check
+                legal_moves.append(move)
+        # This is done by simulating the move and checking if the king is in check
+        return legal_moves
 
     def build_move_dict(
         self, team: Team, enemy: Team
     ) -> dict[Piece, list[tuple[int, int]]]:
         move_dict = {}
-        # assume we are building valid moves, will add legal move stuff
         for piece in team.get_active_pieces():
             move_dict[piece] = self.generate_legal_moves(piece, team, enemy)
         return move_dict
@@ -303,7 +292,7 @@ class GameBoard(BoardCore):
         )
         self.rect: pygame.Rect = self.surface.get_rect(topleft=(self.pos_x, self.pos_y))
         self._draw_base_board()
-        self.highlighted_squares: dict[tuple[int, int], pygame.Color] = {}
+        self.highlighted_squares: dict[pygame.Color, tuple[int, int]] = {}
 
     def _draw_base_board(self):
         """

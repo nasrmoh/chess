@@ -102,6 +102,26 @@ class GameState:
         self.state = new_state
         self.on_enter_new_state(self.state)
 
+    def on_exit_current_state(self):
+        if self.state == STARTTURN:
+            pass
+        elif self.state == SELECTPIECE:
+            self.set_mouse_pressed(False)
+        elif self.state == SELECTMOVE:
+            self.remove_highlighted_squares()
+            self.set_mouse_pressed(False)
+        elif self.state == SELECTPROMOTION:
+            self.set_mouse_pressed(False)
+            self.teardown_promo_menu()
+        elif self.state == ENDTURN:
+            self.set_captured_piece(None)
+            self.set_selected_piece(None)
+            self.other_player.king.set_in_check(
+                False
+            )  # assumes that the move was valid
+            self.checking_pieces = {}
+            self.move_dict = {}
+
     def on_enter_new_state(self, state: int):
         """
         A hook method. Whenever we change states, sometimes it is necessary to accomplish some task,
@@ -116,6 +136,8 @@ class GameState:
             )
             if self.checking_pieces:
                 self.current_player.king.set_in_check(True)
+            else:
+                self.current_player.king.set_in_check(False)
             self.move_dict = self.board.build_move_dict(
                 self.current_player, self.other_player
             )
@@ -144,10 +166,12 @@ class GameState:
                     self.selected_piece.get_grid_pos(),
                 ],
             )
+            
         elif state == SELECTPROMOTION:
             assert self.selected_piece is not None
             assert self.selected_piece.is_promotable()
             self.build_promotion_menu(self.selected_piece)
+
         elif state == ENDTURN:
             if self.captured_piece is not None:
                 print(
@@ -155,39 +179,14 @@ class GameState:
                 )
                 self.other_player.active_pieces.remove(self.captured_piece)
                 self.other_player.captured_pieces.append(self.captured_piece)
-            self.update_current_player(self.captured_piece)
         elif state == GAMEEND:
             if self.current_player.king.get_check_status():
-                print(f"{self.other_player} Has Won, Game over")
+                print(f"{self.other_player} Has Won, Game over") 
             else:
                 print(f"Stalemate, No one has won")
             self.end_game_is_running()
 
-    def on_exit_current_state(self):
-        "Generally exit states are for cleaning up"
-        if self.state == STARTTURN:
-            pass
-
-        elif self.state == SELECTPIECE:
-            self.set_mouse_pressed(False)
-
-        elif self.state == SELECTMOVE:
-            self.remove_highlighted_squares()
-            self.set_mouse_pressed(False)
-
-        elif self.state == SELECTPROMOTION:
-            self.set_mouse_pressed(False)
-            self.teardown_promo_menu()
-
-        elif self.state == ENDTURN:
-            self.set_captured_piece(None)
-            self.set_selected_piece(None)
-            self.current_player.king.set_in_check(
-                False
-            )  # assumes that the move was valid
-            self.teardown_promo_menu()
-            self.checking_pieces = {}
-            self.move_dict = {}
+    
 
     def handle_turn_start(self):
 
@@ -211,15 +210,19 @@ class GameState:
                     if self.selected_piece and self.current_player.owns(
                         self.selected_piece
                     ):
-                        self.change_state_to(SELECTMOVE)
+                        legal_moves = self.move_dict[self.selected_piece]
+                        if legal_moves:
+                            self.change_state_to(SELECTMOVE)
+                        else:
+                            self.reject_selection("Piece has no valid moves")
                     else:
-                        self.reset_turn(
+                        self.reject_selection(
                             f"{self.print_current_player()} does not own the selected piece"
                         )
                 else:
-                    self.reset_turn("Board is empty at selected location")
+                    self.reject_selection("Board is empty at selected location")
             else:
-                self.reset_turn("No Valid Square was selected")
+                self.reject_selection("No Valid Square was selected")
         else:
             self.continue_in_state()
 
@@ -230,8 +233,7 @@ class GameState:
         Note: Valid moves are generated in the 'on_enter_new_state' method
         """
         # generate associated move data
-        if self.mouse_pressed:  # event
-            # validate event
+        if self.mouse_pressed:  
             legal_moves = self.move_dict[self.selected_piece]
             if legal_moves:
                 if self.valid_square_selected(self.mouse_pos):
@@ -246,11 +248,11 @@ class GameState:
                         else:
                             self.change_state_to(ENDTURN)
                     else:
-                        self.reset_turn("Invalid move for selected piece")
+                        self.reject_selection("Invalid move for selected piece")
                 else:
-                    self.reset_turn("Invalid Square Selected")
+                    self.reject_selection("Invalid Square Selected")
             else:
-                self.reset_turn("Piece has no valid moves")
+                self.reject_selection("Piece has no valid moves")
         else:
             self.continue_in_state()
 
@@ -273,13 +275,14 @@ class GameState:
                 self.change_state_to(ENDTURN)
             else:
                 print("Invalid promotion option")
-                self.set_mouse_pressed(False)
+                self.continue_in_state()
         else:
             self.continue_in_state()
 
     def handle_end_turn(self):
         "This method has no operation : End of Turn does not handle user events"
         "End of turns can only be accessed from other states"
+        self.update_current_player()
         self.change_state_to(STARTTURN)
 
     def build_promotion_menu(self, piece: Piece):
@@ -289,8 +292,7 @@ class GameState:
     def teardown_promo_menu(self):
         self.promotion_menu = None
 
-    def reset_turn(self, msg: str = None):
-        # self.reset(msg)
+    def reject_selection(self, msg: str = None):
         if msg:
             print(f"{msg}")
         self.change_state_to(SELECTPIECE)
@@ -302,7 +304,7 @@ class GameState:
     def remove_highlighted_squares(self):
         self.board.clear_highlighted_squares()
 
-    def update_current_player(self, captured_piece):
+    def update_current_player(self):
         """
         Changes the current player into the other player. i.e. changes the active player from white to black
         """
