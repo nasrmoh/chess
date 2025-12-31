@@ -21,6 +21,7 @@ class Piece:
         self.row = row
         self.col = col
         self.color = color
+        self.has_moved = False
         self.surface = self._create_piece_surface()
         self.rect = pygame.Rect(
             BOARDPOSX + SQUARESIZE * col,
@@ -51,9 +52,10 @@ class Piece:
 
     def update_after_move(self):
         """
-        Exists as a method to update certain pieeces after a successful move
+        On successful movement, updates the self.has_moved attribute to prevent "double-jumps".
         """
-        pass
+        if not self.has_moved:
+            self.has_moved = True
 
     def is_valid_move(self, new_row: int, new_col: int, board):
         """
@@ -203,12 +205,7 @@ class Pawn(Piece):
                     valid_moves.append((one_forward, new_col))
         return valid_moves
 
-    def update_after_move(self):
-        """
-        On successful movement, updates the self.has_moved attribute to prevent "double-jumps".
-        """
-        if not self.has_moved:
-            self.has_moved = True
+    
 
     def is_promotable(self) -> bool:
         """
@@ -265,7 +262,6 @@ class Bishop(SlidingPiece):
 class Rook(SlidingPiece):
     def __init__(self, color: pygame.Color, row: int, col: int, type: str):
         super().__init__(color, row, col, type)
-        self.has_moved = False
 
     def generate_valid_moves(self, board) -> list[tuple[int, int]]:
         """
@@ -289,8 +285,9 @@ class King(Piece):
 
     def __init__(self, color: pygame.Color, row: int, col: int, type: str):
         super().__init__(color, row, col, type)
-        self.has_moved = False
         self.in_check = False
+        self.long_rook = None
+        self.near_rook = None
 
     def set_in_check(self, value):
         assert type(value) is bool
@@ -311,6 +308,7 @@ class King(Piece):
 
         """
         valid_moves = []
+        # Directional Moves
         directions = CARDINALS + DIAGONALS
         for dr, dc in directions:
             new_row = self.row + dr
@@ -320,4 +318,42 @@ class King(Piece):
                 piece = board.get_square_contents(new_row, new_col)
                 if not piece or self.is_enemy(piece):
                     valid_moves.append((new_row, new_col))
+
+        # Castling Move
+        # To castle we need to make some checks
+        # King hasn't moved
+        long_rook_col = 0
+        long_rook : Rook
+        near_rook : Rook
+        near_rook_col = 7
+        if (not self.has_moved) and (not self.in_check):
+            # now we'll handle the long rook that is 4 blocks away
+            long_rook = board.get_square_contents(self.row, long_rook_col)
+            if long_rook and not long_rook.has_moved:
+                long_rook_diff = 3
+                squares_empty = True
+                for i in range(1, long_rook_diff + 1):
+                    if board.get_square_contents(self.row, long_rook_col + i) != None:
+                        squares_empty = False
+                        break
+                if squares_empty:
+                    valid_moves.append((self.row, long_rook.col))
+
+
+
+
+
+
+                squares_empty = board.get_square_contents(self.row, long_rook_col + 1) == None
+
+
+
+
+            long_rook = board.get_square_contents(self.row, )
+
+
+        
+
+
+
         return valid_moves

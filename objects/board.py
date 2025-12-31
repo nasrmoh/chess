@@ -249,6 +249,30 @@ class BoardCore:
         return checking_pieces
 
 
+"""    def squares_empty_between_col(self, init_row, init_col, fin_row, fin_col):
+        
+        Checks that the squares between initial square and final square are
+        empty, Does not include the initial and final
+        
+        if init_row != fin_row:
+            raise ValueError("Rows must be identical to compare")
+
+        if fin_col < init_col:
+            temp = fin_col
+            fin_col = init_col
+            init_col = temp
+
+        remove_edges = 1
+        col_diff = fin_col - init_col - remove_edges
+        for i in range(col_diff):"""
+
+
+
+        
+
+
+
+
 class GameBoard(BoardCore):
     """
     Represents a NxN checkerboard
