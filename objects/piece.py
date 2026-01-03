@@ -3,8 +3,6 @@ from .constants import (
     WHITE,
     BLACK,
     SQUARESIZE,
-    BOARDPOSX,
-    BOARDPOSY,
     DIAGONALS,
     CARDINALS,
     KNIGHT_OFFSET,
@@ -22,29 +20,6 @@ class Piece:
         self.col = col
         self.color = color
         self.has_moved = False
-        self.surface = self._create_piece_surface()
-        self.rect = pygame.Rect(
-            BOARDPOSX + SQUARESIZE * col,
-            BOARDPOSY + SQUARESIZE * row,
-            SQUARESIZE,
-            SQUARESIZE,
-        )
-
-    def _create_piece_surface(self) -> pygame.Surface:
-        """
-        Loads and scales the image of this piece, returning it as a pygame.Surface
-
-        the specific image is selected based on the pieces attributes self.type and self.color,
-        loaded from the Assets directory, and scaled by the pieces self.size attribute
-
-        Returns:
-            pygame.Surface object
-        """
-        if self.color == WHITE:
-            surface = pygame.image.load(f"./Assets/{self.type}_white.png")
-        else:
-            surface = pygame.image.load(f"./Assets/{self.type}_black.png")
-        return pygame.transform.smoothscale(surface, (self.size, self.size))
 
     def generate_valid_moves(self, board):
         # exists purely to be over written by subclasses
@@ -322,6 +297,7 @@ class King(Piece):
         # Castling Move
         # To castle we need to make some checks
         # King hasn't moved
+        """
         long_rook_col = 0
         long_rook : Rook
         near_rook : Rook
@@ -350,7 +326,7 @@ class King(Piece):
 
 
             long_rook = board.get_square_contents(self.row, )
-
+        """
 
         
 
