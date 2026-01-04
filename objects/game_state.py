@@ -29,7 +29,6 @@ from .constants import (
 from .board import GameBoard
 from pygame.locals import *
 from .piece import Piece
-from .promotion_menu import PromotionMenu
 from .team import Team
 import pygame
 import sys
@@ -59,10 +58,9 @@ class GameState:
         self.board = GameBoard(SQUARESIZE, SQUARECOUNT)
         self.dark_team  = Team(BLACKPLAYER, BLACK) # Game Data
         self.light_team = Team(WHITEPLAYER, WHITE) # Game Data
-        self.board.set_pieces(self.dark_team.active_pieces, self.light_team.active_pieces)
+        self.board.set_pieces(self.pieces_by_id)
         self.current_player: Team = self.light_team
         self.other_player: Team = self.dark_team
-        self.pieces_by_id = self.__build_pieces_by_id_dict()
         self.game_is_running = True
         #self.on_enter_new_state(STARTTURN)
 
@@ -388,16 +386,4 @@ class GameState:
                 return False
         return True
 
-    def __build_pieces_by_id_dict(self) -> dict[int,Piece]:
-        light_pieces = self.light_team.active_pieces
-        dark_pieces = self.dark_team.active_pieces
-        pieces_by_id = {}
-        id_count = 0
-        for piece in light_pieces:
-            pieces_by_id[id_count] = piece
-            id_count+=1
-        for piece in dark_pieces:
-            pieces_by_id[id_count] = piece
-            id_count+=1
-        return pieces_by_id
-
+    

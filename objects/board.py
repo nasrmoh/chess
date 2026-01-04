@@ -12,11 +12,15 @@ from .team import Team
 
 
 class GameBoard:
-    def __init__(self, square_size: int, square_count: int):
+    def __init__(self, square_size: int, square_count: int, grid : list[list] = None):
         self.square_size = square_size
         self.square_count = square_count
         self.struct: list[list[Piece | None]] = None  # delayed setup
-        self.struct = self._create_board_struct()
+        self.pieces_by_id = self.__build_pieces_by_id_dict()
+        if not grid:
+            self.struct = self._create_board_struct()
+        else:
+            self.struct = grid
 
 
 
@@ -36,7 +40,23 @@ class GameBoard:
             struct.append(row)
         return struct
 
-    def set_piece(self, piece: Piece):
+        
+    def __build_pieces_by_id_dict(self) -> dict[int,Piece]:
+        light_pieces = self.light_team.active_pieces
+        dark_pieces = self.dark_team.active_pieces
+        pieces_by_id = {}
+        id_count = 0
+        for piece in light_pieces:
+            pieces_by_id[id_count] = piece
+            id_count+=1
+        for piece in dark_pieces:
+            pieces_by_id[id_count] = piece
+            id_count+=1
+        return pieces_by_id
+
+
+
+    def set_piece(self, id, row, col):
         """
         Places piece on the board at its specified (row, col) position
         This method is used during setup of games, not for movement of pieces.
@@ -50,13 +70,12 @@ class GameBoard:
             IndexError: If the specififed location is out of bounds
         """
         # ensures board is empty at location.
-        row, col = piece.row, piece.col
 
         if not self.in_bounds(row, col):
             raise IndexError(f"Board position out of bounds: ({row}, {col})")
 
         if self.struct[row][col] is None:
-            self.struct[row][col] = piece
+            self.struct[row][col] = id
         else:
             raise ValueError(f"Square is occupied at ({row}, {col})")
 
@@ -114,7 +133,7 @@ class GameBoard:
         # now filter for legal moves
         for move in valid_moves:
             ghost_piece = copy(piece)
-            ghost_board = VirtualBoard(self)
+            ghost_board = GameBoard(self.square_size, self.square_count, self.clone_grid())
             # apply the move
             ghost_board.move_piece(ghost_piece, *move)
             if not ghost_board.get_checking_pieces(
@@ -142,7 +161,7 @@ class GameBoard:
         """
         return (0 <= row < SQUARECOUNT) and (0 <= col < SQUARECOUNT)
 
-    def set_pieces(self, dark_pieces: list[Piece], light_pieces: list[Piece]):
+    def set_pieces(self, pieces_by_id : dict):
         """
         Sets the dark pieces and light pieces for the corresponding players.
 
@@ -157,10 +176,14 @@ class GameBoard:
         Raises:
             ValueError: If a piece is a placed on a square that is already occupied
         """
-        for black_piece in dark_pieces:
-            self.set_piece(black_piece)
-        for white_piece in light_pieces:
-            self.set_piece(white_piece)
+        # want to use pieces by id dictionary
+
+        for (id, piece) in pieces_by_id.items():
+            row = piece.row
+            col = piece.col
+            self.set_piece(id, row, col)
+
+
 
     def move_piece(self, piece: Piece, dest_row: int, dest_col: int) -> Piece | None:
         """
@@ -226,29 +249,6 @@ class GameBoard:
         team.active_pieces.append(new_piece)
         return new_piece
 
-    def get_checking_pieces(self, current_player: Team, enemy_team: Team):
-        checking_pieces = {}
-        kings_grid_pos = current_player.king.get_grid_pos()
-
-        for enemy_piece in enemy_team.get_active_pieces():
-            enemy_pieces_moves = self.generate_valid_moves(enemy_piece)
-            if kings_grid_pos in enemy_pieces_moves:
-                enemy_piece_current_pos = enemy_piece.get_grid_pos()
-                checking_pieces[enemy_piece] = enemy_piece_current_pos
-
-        return checking_pieces
-
-
-
-class VirtualBoard(GameBoard):
-    def __init__(self, board):
-        
-        super().__init__(board.square_size, board.square_count)
-        # VirtualBoard changes the initailization of the struct object so it does not make a call to
-        # BoardCore.init_struct
-        self.square_count = board.square_count
-        self.struct = self.copy(board.struct)
-
     def get_checking_pieces(
         self, current_player: Team, enemy_team: Team, move=None, is_king=False
     ):
@@ -268,11 +268,11 @@ class VirtualBoard(GameBoard):
 
         return checking_pieces
 
-    def copy(self, lst: list[Piece]):
+    def clone_grid(self):
         grid = []
         for row in range(self.square_count):
             grid_row = []
             for col in range(self.square_count):
-                grid_row.append(lst[row][col])
+                grid_row.append(self.struct[row][col])
             grid.append(grid_row)
         return grid

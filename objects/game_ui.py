@@ -91,7 +91,7 @@ class GameUI:
         clock.tick(FPS)
         self.board_view.draw_board()  # draw board onto the window
         self.board_view.draw_all_highlights(self.board_view.highlighted_squares)
-        self.board_view.draw_all_pieces()  # draw all pieces onto the board
+        self.board_view.draw_all_pieces(self.game_state.board.struct, self.views_by_id)  # draw all pieces onto the board
         if self.promotion_menu:
             self.board.draw_menu(self.promotion_menu)
         pygame.display.update()

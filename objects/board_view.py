@@ -94,7 +94,7 @@ class BoardView:
             square.fill(color)
         self.surface.blit(square, (col_index * SQUARESIZE, row_index * SQUARESIZE))
 
-    def draw_all_pieces(self):
+    def draw_all_pieces(self, grid : list[list[int | None]], views_by_id):
         """
         Draws all pieces located on the board
 
@@ -103,11 +103,12 @@ class BoardView:
 
         This method assumes all surface details are correctly implemented for any given piece
         """
-        for row in range(self.square_count):
-            for col in range(self.square_count):
-                contents = self.get_square_contents(row, col)
+        for row in range(SQUARECOUNT):
+            for col in range(SQUARECOUNT):
+                contents = grid[row][col]
                 if contents is not None:
-                    self.draw_piece(contents, row, col)
+                    piece_view = views_by_id[contents]
+                    self.draw_piece(piece_view, row, col)
 
     def get_abs_pos(self, row: int, col: int) -> tuple[int, int]:
         """

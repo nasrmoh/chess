@@ -25,13 +25,13 @@ from objects.team import Team
 
 
 def setup():
-    pygame.init()
     game_state = GameState()
     game_ui = GameUI(game_state)
     return game_state, game_ui, pygame.time.Clock()
 
 def main():
     # Setup and Initialization
+    pygame.init()
     game_state, game_ui, clock = setup()
     actions = {}
     commands = []
