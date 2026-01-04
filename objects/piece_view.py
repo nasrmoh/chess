@@ -8,11 +8,5 @@ from .constants import (
 )
 
 class PieceView():
-    def __init__(self, surface, row, col):
+    def __init__(self, surface):
         self.surface = surface
-        self.rect = pygame.Rect(
-            BOARDPOSX + SQUARESIZE * col,
-            BOARDPOSY + SQUARESIZE * row,
-            SQUARESIZE,
-            SQUARESIZE,
-        )

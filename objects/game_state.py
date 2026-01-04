@@ -53,16 +53,13 @@ class GameState:
             {}
         )  # pieces of the other player that are checking the current player
         self.state: int = GAMESTART  # state variable
-
-
         self.board = GameBoard(SQUARESIZE, SQUARECOUNT)
         self.dark_team  = Team(BLACKPLAYER, BLACK) # Game Data
         self.light_team = Team(WHITEPLAYER, WHITE) # Game Data
-        self.board.set_pieces(self.pieces_by_id)
+        self.board.setup_pieces(self.dark_team, self.light_team)
         self.current_player: Team = self.light_team
         self.other_player: Team = self.dark_team
         self.game_is_running = True
-        #self.on_enter_new_state(STARTTURN)
 
 
     def update_state(self, actions):

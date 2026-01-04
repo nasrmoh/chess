@@ -16,7 +16,7 @@ class GameBoard:
         self.square_size = square_size
         self.square_count = square_count
         self.struct: list[list[Piece | None]] = None  # delayed setup
-        self.pieces_by_id = self.__build_pieces_by_id_dict()
+        self.pieces_by_id = {}
         if not grid:
             self.struct = self._create_board_struct()
         else:
@@ -54,6 +54,13 @@ class GameBoard:
             id_count+=1
         return pieces_by_id
 
+
+    def square_by_id(self, id) -> tuple[int, int]:
+        for row in range(SQUARECOUNT):
+            for col in range(SQUARECOUNT):
+                if self.struct[row][col] == id:
+                    return (row, col)
+        raise IndexError("Id not found on board")
 
 
     def set_piece(self, id, row, col):
@@ -127,7 +134,7 @@ class GameBoard:
         is_king = False
         legal_moves = []
         # first generate valid moves.
-        if piece.get_type() == "king":
+        if piece.get_kind() == "king":
             is_king = True
         valid_moves = piece.generate_valid_moves(self)
         # now filter for legal moves
@@ -160,28 +167,104 @@ class GameBoard:
             col(int): The positions col
         """
         return (0 <= row < SQUARECOUNT) and (0 <= col < SQUARECOUNT)
+    
 
-    def set_pieces(self, pieces_by_id : dict):
-        """
-        Sets the dark pieces and light pieces for the corresponding players.
+    def setup_pieces(self, dark_team : Team, light_team : Team):
 
-        Assumes each piece has their 'row' and 'col' attributes setup
 
-        This method is only used for setting up all pieces, not moving groups of pieces.
 
-        Args:
-            dark_pieces(list[Piece]): The pieces for the player who plays the dark pieces
-            light_pieces(list[Piece]): The pieces for the player who plays the light pieces
 
-        Raises:
-            ValueError: If a piece is a placed on a square that is already occupied
-        """
-        # want to use pieces by id dictionary
+        non_pawn_pieces = []
+        rook = Rook(dark_team.color,  "rook")
+        knight = Knight(dark_team.color,  "knight")
+        bishop = Bishop(dark_team.color,  "bishop")
+        queen = Queen(dark_team.color,  "queen")
+        king = King(dark_team.color,  "king")
+        bishop1 = Bishop(dark_team.color, "bishop")
+        knight1 = Knight(dark_team.color, "knight")
+        rook1 = Rook(dark_team.color, "rook")
+        non_pawn_pieces += [
+            rook,
+            knight,
+            bishop,
+            queen,
+            king,
+            bishop1,
+            knight1,
+            rook1,
+        ]
 
-        for (id, piece) in pieces_by_id.items():
-            row = piece.row
-            col = piece.col
-            self.set_piece(id, row, col)
+        # black non pawns
+        black_main_rank = 0        
+        for i in range(SQUARECOUNT):
+            if non_pawn_pieces[i].kind == "king":
+                dark_team.set_king_id() = non_pawn_pieces[i]
+            self.struct[black_main_rank][i] = i # place reference on board
+            non_pawn_pieces[i].set_id(i) # set id
+            self.pieces_by_id[i] = non_pawn_pieces[i] # place id -> piece on dict
+            dark_team.active_pieces.append(i)
+
+
+
+        # black pieces first
+        # black pawns
+        black_pawn_rank = 1
+        for j in range(SQUARECOUNT, (SQUARECOUNT * 2)):
+            self.struct[black_pawn_rank][j - SQUARECOUNT] = j
+            pawn = Pawn(dark_team.color, "pawn")
+            pawn.set_id(j)
+            self.pieces_by_id[j] = pawn
+            dark_team.active_pieces.append(j)
+
+
+
+
+
+
+
+        # white pawns
+        non_pawn_pieces = []
+        rook = Rook(light_team.color,  "rook")
+        knight = Knight(light_team.color,  "knight")
+        bishop = Bishop(light_team.color,  "bishop")
+        queen = Queen(light_team.color,  "queen")
+        king = King(light_team.color,  "king")
+        bishop1 = Bishop(light_team.color, "bishop")
+        knight1 = Knight(light_team.color, "knight")
+        rook1 = Rook(light_team.color, "rook")
+        non_pawn_pieces += [
+            rook,
+            knight,
+            bishop,
+            queen,
+            king,
+            bishop1,
+            knight1,
+            rook1,
+        ]
+        # white pawns
+        white_pawn_rank = 6
+        for j in range(SQUARECOUNT * 2, (SQUARECOUNT * 3)):
+            self.struct[white_pawn_rank][j - SQUARECOUNT * 2] = j
+            pawn = Pawn(light_team.color, "pawn")
+            pawn.set_id(j)
+            self.pieces_by_id[j] = pawn
+            light_team.active_pieces.append(j)
+
+        # white non pawns
+        white_main_rank = 7
+        for i in range(SQUARECOUNT * 3, SQUARECOUNT * 4):
+            if non_pawn_pieces[i - SQUARECOUNT * 3].kind == "king":
+                light_team.set_king_id() = non_pawn_pieces[i - SQUARECOUNT * 3]
+            self.struct[white_main_rank][i - SQUARECOUNT * 3] = i # place reference on board
+            non_pawn_pieces[i - SQUARECOUNT * 3].set_id(i) # set id
+            self.pieces_by_id[i] = non_pawn_pieces[i - SQUARECOUNT * 3] # place id -> piece on dict
+            light_team.active_pieces.append(i)
+
+
+
+
+    
 
 
 
@@ -213,7 +296,7 @@ class GameBoard:
             self.struct[dest_row][dest_col] = piece
             return captured_piece
 
-    def upgrade_piece(self, team: Team, piece: Piece, dest_type: str) -> Piece:
+    def upgrade_piece(self, team: Team, piece: Piece, dest_kind: str) -> Piece:
         """
         Upgrades a pawn piece into a new type (rook, bishop, knight or queen).
 
@@ -236,14 +319,14 @@ class GameBoard:
             PIECE_KNIGHT: Knight,
             PIECE_QUEEN: Queen,
         }
-        if piece.type != PIECE_PAWN:
-            raise TypeError(f"piece : {piece.type} cannot be promoted")
+        if piece.kind != PIECE_PAWN:
+            raise TypeError(f"piece : {piece.kind} cannot be promoted")
         if not team.owns(piece):
-            raise TypeError(f"piece : {piece.type} does not belong to team")
-        if dest_type not in upgrade_selection:
-            raise ValueError(f"Invalid upgrade type : {dest_type}")
-        piece_class = upgrade_selection[dest_type]
-        new_piece = piece_class(color, row, col, dest_type)
+            raise TypeError(f"piece : {piece.kind} does not belong to team")
+        if dest_kind not in upgrade_selection:
+            raise ValueError(f"Invalid upgrade type : {dest_kind}")
+        piece_class = upgrade_selection[dest_kind]
+        new_piece = piece_class(color, row, col, dest_kind)
         self.struct[new_piece.row][new_piece.col] = new_piece
         team.active_pieces.remove(piece)
         team.active_pieces.append(new_piece)
@@ -256,7 +339,22 @@ class GameBoard:
         if is_king:
             kings_grid_pos = move
         else:
-            kings_grid_pos = current_player.king.get_grid_pos()
+            king_id = current_player.get_king_id()
+            kings_grid_pos = self.square_by_id(king_id)
+
+
+        enemy_count = enemy_team.get_count_active()
+        found_count = 0
+        for row in range(SQUARECOUNT):
+            for col in range(SQUARECOUNT):
+                if found_count > enemy_count:
+                    break
+                contents  = self.struct[row][col]
+                if contents and (self.pieces_by_id[contents].color ==
+
+
+
+
 
         for enemy_piece in enemy_team.get_active_pieces():
             if enemy_piece.get_grid_pos() == move:
@@ -265,7 +363,6 @@ class GameBoard:
             if kings_grid_pos in enemy_pieces_moves:
                 enemy_piece_current_pos = enemy_piece.get_grid_pos()
                 checking_pieces[enemy_piece] = enemy_piece_current_pos
-
         return checking_pieces
 
     def clone_grid(self):

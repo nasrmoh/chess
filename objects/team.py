@@ -28,7 +28,7 @@ class Team:
     def __init__(self, team_id: int, color: pygame.Color):
         self.team_id: int = team_id
         self.color: pygame.Color = color
-        self.active_pieces: list[Piece] = self._set_pieces()
+        self.active_pieces: list[Piece] = []
         self.captured_pieces: list[Piece] = []
 
     def __str__(self):
@@ -39,44 +39,7 @@ class Team:
         else:
             raise ValueError("Invalid Color")
 
-    def _set_pieces(self):
-        """
-        Used to setup each pieces data, does not modify board, only internal piece data.
-
-        Can be used to reset all pieces for a given player / team.
-        """
-        pieces = []
-        self.captured_pieces = []
-        if self.team_id == WHITEPLAYER:
-            main_rank = 7
-            pawn_rank = 6
-        else:
-            main_rank = 0
-            pawn_rank = 1
-
-        for i in range(SQUARECOUNT):
-            pawn = Pawn(self.color, pawn_rank, i, "pawn")
-            pieces.append(pawn)
-        rook = Rook(self.color, main_rank, 0, "rook")
-        rook1 = Rook(self.color, main_rank, 7, "rook")
-        knight = Knight(self.color, main_rank, 1, "knight")
-        knight1 = Knight(self.color, main_rank, 6, "knight")
-        bishop = Bishop(self.color, main_rank, 2, "bishop")
-        bishop1 = Bishop(self.color, main_rank, 5, "bishop")
-        king = King(self.color, main_rank, 4, "king")
-        queen = Queen(self.color, main_rank, 3, "queen")
-        pieces += [
-            rook,
-            rook1,
-            knight,
-            knight1,
-            bishop,
-            bishop1,
-            queen,
-            king,
-        ]
-        self.king = king
-        return pieces
+    
 
     def owns(self, piece: Piece) -> bool:
         """
@@ -87,9 +50,12 @@ class Team:
 
         """
         return self.color == piece.color
+    
+    def set_king_id(self, king_id):
+        self.king_id = king_id
 
-    def get_king_position(self):
-        self.king
+    def get_king_id(self):
+        return self.king_Id
 
     def get_active_pieces(self):
         return self.active_pieces

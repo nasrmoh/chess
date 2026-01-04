@@ -43,23 +43,23 @@ class GameUI:
 
     def __build_sprite_cache(self, game_state : GameState) -> dict[tuple[str, str], Surface]:
         sprite_cache = {}
-        pieces_by_id = game_state.pieces_by_id
+        pieces_by_id = game_state.board.pieces_by_id
         for piece in set(pieces_by_id.values()): # may cause problems
-            piece_type = piece.type
+            piece_kind = piece.kind
             piece_color = piece.color
             if  piece_color == WHITE:
-                surface = pygame.image.load(f"./Assets/{piece_type}_white.png")
+                surface = pygame.image.load(f"./Assets/{piece_kind}_white.png")
             else:
-                surface = pygame.image.load(f"./Assets/{piece_type}_black.png")
+                surface = pygame.image.load(f"./Assets/{piece_kind}_black.png")
             surface = pygame.transform.smoothscale(surface, (SQUARESIZE, SQUARESIZE))
-            sprite_cache[(piece_type, piece_color)] = surface
+            sprite_cache[(piece_kind, piece_color)] = surface
         return sprite_cache
 
     def __build_views_by_id(self):
-        pieces_by_id = self.game_state.pieces_by_id
+        pieces_by_id = self.game_state.board.pieces_by_id
         views_by_id = {}
         for id, piece in pieces_by_id.items():
-            views_by_id[id] = PieceView(self.sprite_cache[piece.type, piece.color], piece.row, piece.col)
+            views_by_id[id] = PieceView(self.sprite_cache[piece.kind, piece.color])
         return views_by_id
 
     def handle_events(self) -> dict[str, bool | tuple[int, int] | tuple[None, None]]:
