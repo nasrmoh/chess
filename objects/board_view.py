@@ -108,9 +108,9 @@ class BoardView:
                 contents = grid[row][col]
                 if contents is not None:
                     piece_view = views_by_id[contents]
-                    self.draw_piece(piece_view, row, col)
+                    self.draw_piece(piece_view, (row, col))
 
-    def get_abs_pos(self, row: int, col: int) -> tuple[int, int]:
+    def get_abs_pos(self, square : tuple[int, int]) -> tuple[int, int]:
         """
         converts a grid pos (row, col) into a absolute window screen position (x, y)
 
@@ -126,14 +126,15 @@ class BoardView:
         Raises:
             ValueError: If the given grid pos (row, col) is not found on the board
         """
-        if not self.in_bounds(row, col):
+        row, col = square
+        if not self.in_bounds((row, col)):
             raise ValueError(f"No position corresponds to grid position ({row}, {col})")
         return (
             BOARDPOSX + col * SQUARESIZE,
             BOARDPOSY + row * SQUARESIZE,
         )
 
-    def draw_piece(self, piece_view : PieceView, row: int, col: int):
+    def draw_piece(self, piece_view : PieceView, square: tuple[int,int]):
         """
         Draws the piece on the game window at a specific board position (row, col)
 
@@ -149,7 +150,7 @@ class BoardView:
             row (int): The row on the board
             col (int): The col on the board
         """
-        pos = self.get_abs_pos(row, col)
+        pos = self.get_abs_pos(square)
         self.window.blit(piece_view.surface, pos)
 
     def mouse_pos_to_grid(
@@ -181,6 +182,17 @@ class BoardView:
             return (int(row), int(col))
         else:
             return (None, None)
+
+    def in_bounds(self, square : tuple[int, int]) -> bool:
+        """
+        Returns if a position is contained within the board
+
+        Args:
+            row(int): The positions row
+            col(int): The positions col
+        """
+        row, col = square
+        return (0 <= row < SQUARECOUNT) and (0 <= col < SQUARECOUNT)
 
     def draw_board(self):
         """

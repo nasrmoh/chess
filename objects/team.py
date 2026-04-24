@@ -53,9 +53,14 @@ class Team:
     
     def set_king_id(self, king_id):
         self.king_id = king_id
+    
+    def set_king_in_check(self, board, cond):
+        king : King = board.get_pieces_by_id(self.king_id)
+        king.set_in_check(cond)
+
 
     def get_king_id(self):
-        return self.king_Id
+        return self.king_id
 
     def get_active_pieces(self):
         return self.active_pieces

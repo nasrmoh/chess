@@ -30,11 +30,11 @@ class Piece:
         if not self.has_moved:
             self.has_moved = True
 
-    def is_valid_move(self, to_square : tuple[int, int], board):
+    def is_valid_move(self, from_square : tuple[int, int], to_square : tuple[int, int], board):
         """
         Checks if a move is valid, return True. Otherwise False
         """
-        return to_square in self.generate_valid_moves(board)
+        return to_square in self.generate_valid_moves(from_square, board)
 
     def is_ally(self, other) -> bool:
         """
@@ -55,7 +55,7 @@ class Piece:
         assert isinstance(other, Piece)
         return self.color != other.color
 
-    def is_promotable(self) -> bool:
+    def is_promotable(self, from_square) -> bool:
         """
         Checks if the Piece can be promoted, if it is a pawn this method will be overwritten, otherwise returns False.
         """
@@ -99,11 +99,12 @@ class SlidingPiece(Piece):
         for dr, dc in directions:
             new_row = row + dr
             new_col = col + dc
-            while board.in_bounds(new_row, new_col):
-                piece = board.get_square_contents(new_row, new_col)
-                if not piece:  # no piece, add move
+            while board.in_bounds((new_row, new_col)):
+                contents = board.get_square_contents((new_row, new_col))
+                possible_piece_id = contents
+                if (possible_piece_id is None):  # no piece id i.e. None, add move
                     valid_moves.append((new_row, new_col))
-                elif self.is_enemy(piece):
+                elif self.is_enemy(board.pieces_by_id[possible_piece_id]):
                     valid_moves.append(
                         (new_row, new_col)
                     )  # enemy, add, then stop sliding
@@ -140,27 +141,27 @@ class Pawn(Piece):
         two_forward = row + (dv * 2)
 
         # single jump moves
-        if board.is_empty(one_forward, col) and board.in_bounds(
+        if board.in_bounds((one_forward, col)) and board.is_empty((
             one_forward, col
-        ):
+        )):
             valid_moves.append((one_forward, col))
 
             # double jump moves (check only if there is a valid single move)
             if (
                 not self.has_moved
-                and board.is_empty(two_forward, col)
-                and board.in_bounds(two_forward,col)
+                and board.is_empty((two_forward, col))
+                and board.in_bounds((two_forward,col))
             ):
                 valid_moves.append((two_forward, col))
 
         # Diagonals
         for dh in [-1, 1]:
-            new_col = self.col + dh
-            if board.in_bounds(one_forward, new_col) and not board.is_empty(
+            new_col = col + dh
+            if board.in_bounds((one_forward, new_col)) and not board.is_empty((
                 one_forward, new_col
-            ):
-                piece = board.get_square_contents(one_forward, new_col)
-                if piece and self.is_enemy(piece):
+            )):
+                possible_piece_id = board.get_square_contents((one_forward, new_col))
+                if (possible_piece_id is not None) and self.is_enemy(board.get_pieces_by_id(possible_piece_id)):
                     valid_moves.append((one_forward, new_col))
         return valid_moves
 
@@ -200,11 +201,11 @@ class Knight(Piece):
         valid_moves = []
         for dr, dc in KNIGHT_OFFSET:
             new_row, new_col = row + dr, col + dc
-            if board.in_bounds(new_row, new_col):  # check move is actually on the board
-                piece = board.get_square_contents(
+            if board.in_bounds((new_row, new_col)):  # check move is actually on the board
+                possible_piece_id = board.get_square_contents((
                     new_row, new_col
-                )  # check if there is a piece to be captured
-                if not piece or self.is_enemy(piece):
+                ))  # check if there is a piece to be captured
+                if (possible_piece_id == None) or self.is_enemy(board.get_pieces_by_id(possible_piece_id)):
                     valid_moves.append((new_row, new_col))
         return valid_moves
 
@@ -213,11 +214,11 @@ class Bishop(SlidingPiece):
     def __init__(self, color: pygame.Color, kind: str):
         super().__init__(color, kind)
 
-    def generate_valid_moves(self, board) -> list[tuple[int, int]]:
+    def generate_valid_moves(self, from_square : tuple[int, int], board) -> list[tuple[int, int]]:
         """
         Generates the diagonal sliding moves via the get_sliding_moves method.
         """
-        return self.get_sliding_moves(board, DIAGONALS)
+        return self.get_sliding_moves(from_square, board, DIAGONALS)
 
 
 class Rook(SlidingPiece):
@@ -228,7 +229,7 @@ class Rook(SlidingPiece):
         """
         Generates the cardinal sliding moves via the get_sliding_moves method.
         """
-        return self.get_sliding_moves(board, from_square,  CARDINALS)
+        return self.get_sliding_moves(from_square, board, CARDINALS)
 
 
 class Queen(SlidingPiece):
@@ -239,7 +240,7 @@ class Queen(SlidingPiece):
         """
         Generates the Queens movements combinging digonal and cardinal sliding moves.
         """
-        return self.get_sliding_moves(board, from_square, CARDINALS + DIAGONALS)
+        return self.get_sliding_moves(from_square, board, CARDINALS + DIAGONALS)
 
 
 class King(Piece):
@@ -275,10 +276,10 @@ class King(Piece):
         for dr, dc in directions:
             new_row = row + dr
             new_col = col + dc
-            if board.in_bounds(new_row, new_col):
+            if board.in_bounds((new_row, new_col)):
                 # now validate
-                piece = board.get_square_contents(new_row, new_col)
-                if not piece or self.is_enemy(piece):
+                possible_piece_id = board.get_square_contents((new_row, new_col))
+                if (possible_piece_id is None) or self.is_enemy(board.get_pieces_by_id(possible_piece_id)):
                     valid_moves.append((new_row, new_col))
 
         # Castling Move

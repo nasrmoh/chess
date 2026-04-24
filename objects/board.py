@@ -10,13 +10,15 @@ from .constants import (
 from .piece import Piece, Pawn, Knight, Bishop, Rook, Queen, King
 from .team import Team
 
-
 class GameBoard:
-    def __init__(self, square_size: int, square_count: int, grid : list[list] = None):
+    def __init__(self, square_size: int, square_count: int, grid : list[list] = None, pieces_by_id : dict = None):
         self.square_size = square_size
         self.square_count = square_count
         self.struct: list[list[Piece | None]] = None  # delayed setup
-        self.pieces_by_id = {}
+        if pieces_by_id is not None:
+            self.pieces_by_id = pieces_by_id
+        else :
+            self.pieces_by_id = {}
         if not grid:
             self.struct = self._create_board_struct()
         else:
@@ -56,6 +58,7 @@ class GameBoard:
 
 
     def square_by_id(self, id) -> tuple[int, int]:
+
         for row in range(SQUARECOUNT):
             for col in range(SQUARECOUNT):
                 if self.struct[row][col] == id:
@@ -78,7 +81,7 @@ class GameBoard:
         """
         # ensures board is empty at location.
 
-        if not self.in_bounds(row, col):
+        if not self.in_bounds((row, col)):
             raise IndexError(f"Board position out of bounds: ({row}, {col})")
 
         if self.struct[row][col] is None:
@@ -86,7 +89,7 @@ class GameBoard:
         else:
             raise ValueError(f"Square is occupied at ({row}, {col})")
 
-    def is_empty(self, row: int, col: int) -> bool:
+    def is_empty(self, square : tuple[int, int]) -> bool:
         """
         Checks if given square is empty
 
@@ -97,11 +100,12 @@ class GameBoard:
         Raises:
             IndexError: if the position (row, col) is not valid
         """
-        if not self.in_bounds(row, col):
+        row, col = square
+        if not self.in_bounds((row, col)):
             raise IndexError(f"Position out of bounds: ({row}, {col})")
-        return self.get_square_contents(row, col) is None
+        return self.get_square_contents((row, col)) is None
 
-    def get_square_contents(self, row: int, col: int) -> Piece | None:
+    def get_square_contents(self, square : tuple[int, int]) -> Piece | None:
         """
         Returns the piece at the board position board(row, col), or None if the square is empty
         input :
@@ -110,39 +114,42 @@ class GameBoard:
         Raises :
             ValueError if row or column are out of bounds
         """
+        row, col = square
         if not (0 <= row < SQUARECOUNT and 0 <= col < SQUARECOUNT):
             raise ValueError("Invalid row or column")
         return self.struct[row][col]
 
     def generate_valid_moves(
         self,
-        piece: Piece,
+        id: int,
+        from_square : tuple[int, int]
     ):
-        if piece is not None:
-            valid_moves = piece.generate_valid_moves(self)
+        if id is not None:
+            piece : Piece = self.pieces_by_id[id]
+            valid_moves = piece.generate_valid_moves(from_square, self)
             return valid_moves
 
     def generate_legal_moves(
-        self, piece: Piece | None, team: Team, enemy: Team
+        self, id: int | None, from_square : tuple[int, int], team: Team, enemy: Team
     ) -> list[tuple[int, int]]:
         """
         Returns the legal moves for a given piece.
         Currently only returns valid moves as determined by the piece.
         In the future it will filter out moves that are illegal. i.e. a move that would lead to a checkmate.
- 
         """
         is_king = False
         legal_moves = []
+        piece : Piece = self.pieces_by_id[id]
         # first generate valid moves.
         if piece.get_kind() == "king":
             is_king = True
-        valid_moves = piece.generate_valid_moves(self)
+        valid_moves = piece.generate_valid_moves(from_square, self)
         # now filter for legal moves
         for move in valid_moves:
             ghost_piece = copy(piece)
-            ghost_board = GameBoard(self.square_size, self.square_count, self.clone_grid())
+            ghost_board = GameBoard(self.square_size, self.square_count, self.clone_grid(), self.pieces_by_id)
             # apply the move
-            ghost_board.move_piece(ghost_piece, *move)
+            ghost_board.move_piece(ghost_piece, from_square, move)
             if not ghost_board.get_checking_pieces(
                 team, enemy, move, is_king
             ):  # king not in check
@@ -154,11 +161,21 @@ class GameBoard:
         self, team: Team, enemy: Team
     ) -> dict[Piece, list[tuple[int, int]]]:
         move_dict = {}
-        for piece in team.get_active_pieces():
-            move_dict[piece] = self.generate_legal_moves(piece, team, enemy)
+        found_count = 0
+        ally_count = team.get_count_active()
+        for row in range(SQUARECOUNT):
+            for col in range(SQUARECOUNT):
+                if found_count == ally_count:
+                    break
+                contents  = self.get_square_contents((row, col))
+                if (contents is not None) and (self.pieces_by_id[contents].color == team.color):
+                    team_piece_id = contents
+                    piece = self.pieces_by_id[contents]
+                    found_count += 1
+                    move_dict[piece] = self.generate_legal_moves(team_piece_id, (row, col),  team, enemy)
         return move_dict
 
-    def in_bounds(self, row: int, col: int) -> bool:
+    def in_bounds(self, square : tuple[int, int]) -> bool:
         """
         Returns if a position is contained within the board
 
@@ -166,6 +183,7 @@ class GameBoard:
             row(int): The positions row
             col(int): The positions col
         """
+        row, col = square
         return (0 <= row < SQUARECOUNT) and (0 <= col < SQUARECOUNT)
     
 
@@ -198,7 +216,7 @@ class GameBoard:
         black_main_rank = 0        
         for i in range(SQUARECOUNT):
             if non_pawn_pieces[i].kind == "king":
-                dark_team.set_king_id() = non_pawn_pieces[i]
+                dark_team.set_king_id(i)
             self.struct[black_main_rank][i] = i # place reference on board
             non_pawn_pieces[i].set_id(i) # set id
             self.pieces_by_id[i] = non_pawn_pieces[i] # place id -> piece on dict
@@ -255,7 +273,7 @@ class GameBoard:
         white_main_rank = 7
         for i in range(SQUARECOUNT * 3, SQUARECOUNT * 4):
             if non_pawn_pieces[i - SQUARECOUNT * 3].kind == "king":
-                light_team.set_king_id() = non_pawn_pieces[i - SQUARECOUNT * 3]
+                light_team.set_king_id(i - SQUARECOUNT * 3)
             self.struct[white_main_rank][i - SQUARECOUNT * 3] = i # place reference on board
             non_pawn_pieces[i - SQUARECOUNT * 3].set_id(i) # set id
             self.pieces_by_id[i] = non_pawn_pieces[i - SQUARECOUNT * 3] # place id -> piece on dict
@@ -268,7 +286,7 @@ class GameBoard:
 
 
 
-    def move_piece(self, piece: Piece, dest_row: int, dest_col: int) -> Piece | None:
+    def move_piece(self, piece: Piece, from_square : tuple[int, int], to_square :tuple[int, int]) -> Piece | None:
         """
         moves the given piece by updating both the pieces attributes and the boards structure.
         If a piece is located at the destination square, it is "captured" by removing it from the board structure
@@ -284,16 +302,15 @@ class GameBoard:
         Returns:
             (Piece | None): Returns a captured piece if any, else returns None
         """
+    
         # Move piece by updating piece parameters
-        if piece.is_valid_move(dest_row, dest_col, self):
-            captured_piece = self.get_square_contents(dest_row, dest_col)
-            (old_row, old_col) = piece.apply_move(
-                dest_row, dest_col
-            )  # update piece parameters
-            piece.update_after_move()
-            # update board parameters
+        if piece.is_valid_move(from_square, to_square, self):
+            captured_piece = self.get_square_contents(to_square)
+            old_row, old_col = from_square
+            dest_row, dest_col = to_square
             self.struct[old_row][old_col] = None
-            self.struct[dest_row][dest_col] = piece
+            self.struct[dest_row][dest_col] = piece.id
+            piece.has_moved = True
             return captured_piece
 
     def upgrade_piece(self, team: Team, piece: Piece, dest_kind: str) -> Piece:
@@ -332,6 +349,13 @@ class GameBoard:
         team.active_pieces.append(new_piece)
         return new_piece
 
+
+    def get_pieces_by_id(self, id) -> Piece:
+        if not self.pieces_by_id:
+            raise Exception
+        return self.pieces_by_id[id]
+
+
     def get_checking_pieces(
         self, current_player: Team, enemy_team: Team, move=None, is_king=False
     ):
@@ -347,22 +371,18 @@ class GameBoard:
         found_count = 0
         for row in range(SQUARECOUNT):
             for col in range(SQUARECOUNT):
-                if found_count > enemy_count:
+                if found_count == enemy_count: # found all enemies stop
                     break
                 contents  = self.struct[row][col]
-                if contents and (self.pieces_by_id[contents].color ==
+                if (contents is not None) and (self.pieces_by_id[contents].color == enemy_team.color):
+                    enemy_piece_id = contents
+                    found_count += 1
+                    if (row, col) == move: # king captures
+                        continue
+                    enemy_pieces_moves = self.generate_valid_moves(enemy_piece_id, (row, col))
+                    if kings_grid_pos in enemy_pieces_moves:
+                        checking_pieces[contents] = (row , col)
 
-
-
-
-
-        for enemy_piece in enemy_team.get_active_pieces():
-            if enemy_piece.get_grid_pos() == move:
-                continue
-            enemy_pieces_moves = self.generate_valid_moves(enemy_piece)
-            if kings_grid_pos in enemy_pieces_moves:
-                enemy_piece_current_pos = enemy_piece.get_grid_pos()
-                checking_pieces[enemy_piece] = enemy_piece_current_pos
         return checking_pieces
 
     def clone_grid(self):
