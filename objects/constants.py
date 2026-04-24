@@ -13,12 +13,21 @@ FPS = 60
 EMPTY = None
 DIAGONALS = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 CARDINALS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-KNIGHT_OFFSET = [(-2, 1), (-2, -1), (2, 1), (2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)]
-PIECE_ROOK = "rook"
-PIECE_BISHOP = "bishop"
-PIECE_KNIGHT = "knight"
-PIECE_QUEEN = "queen"
-PIECE_PAWN = "pawn"
+KNIGHT_OFFSET = [
+    (-2, 1),
+    (-2, -1),
+    (2, 1),
+    (2, -1),
+    (1, 2),
+    (-1, 2),
+    (1, -2),
+    (-1, -2),
+]
+PIECE_ROOK = 'rook'
+PIECE_BISHOP = 'bishop'
+PIECE_KNIGHT = 'knight'
+PIECE_QUEEN = 'queen'
+PIECE_PAWN = 'pawn'
 DARKCOLOR = (102, 0, 0)
 LIGHTCOLOR = (185, 122, 87)
 WHITE = (255, 255, 255)
@@ -37,13 +46,13 @@ ENDTURN = 5
 GAMEEND = 6
 BLACKPLAYER = 0
 WHITEPLAYER = 1
-ACTION_QUIT = "quit"
-ACTION_MOUSE_PRESSED = "mouse_pressed"
-ACTION_SELECTED_SQUARE = "selected_square"
-ACTION_PROMOTION_OPTION = "promotion_option"
-COMMAND_HIGHLIGHT_SQUARES = "highlight_squares"
-COMMAND_CLEAR_HIGHLIGHTS = "clear_highlights"
-COMMAND_BUILD_PROMO = "build_promotion_menu"
-COMMAND_TEARDOWN_PROMO = "teardown_promo"
-PAYLOAD_COLOR = "payload_color"
-PAYLOAD_SQUARES = "payload_squares"
+ACTION_QUIT = 'quit'
+ACTION_MOUSE_PRESSED = 'mouse_pressed'
+ACTION_SELECTED_SQUARE = 'selected_square'
+ACTION_PROMOTION_OPTION = 'promotion_option'
+COMMAND_HIGHLIGHT_SQUARES = 'highlight_squares'
+COMMAND_CLEAR_HIGHLIGHTS = 'clear_highlights'
+COMMAND_BUILD_PROMO = 'build_promotion_menu'
+COMMAND_TEARDOWN_PROMO = 'teardown_promo'
+PAYLOAD_COLOR = 'payload_color'
+PAYLOAD_SQUARES = 'payload_squares'

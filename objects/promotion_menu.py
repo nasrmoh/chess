@@ -36,7 +36,9 @@ class PromotionMenu:
         self.y: int = 0.5 * BOARDSIDELENGTH - 0.5 * self.h
         self.x: int = 0.5 * BOARDSIDELENGTH - 0.5 * self.w
         self.surface: pygame.Surface = pygame.Surface((self.w, self.h))
-        self.rect: pygame.Rect = self.surface.get_rect(topleft=(self.x, self.y))
+        self.rect: pygame.Rect = self.surface.get_rect(
+            topleft=(self.x, self.y)
+        )
         self._draw_base_surface()
 
     def _build_img_options(self) -> list[str]:
@@ -52,19 +54,21 @@ class PromotionMenu:
         """
         options = []
         if self.color == BLACK:
-            color_str = "black"
+            color_str = 'black'
         elif self.color == WHITE:
-            color_str = "white"
+            color_str = 'white'
         else:
-            raise TypeError(f"Invalid Color : {self.color}")
+            raise TypeError(f'Invalid Color : {self.color}')
 
-        piece_types = ["rook", "bishop", "knight", "queen"]
+        piece_types = ['rook', 'bishop', 'knight', 'queen']
         options = []
         for piece in piece_types:
-            options.append(f"{piece}_{color_str}")
+            options.append(f'{piece}_{color_str}')
         return options
 
-    def get_valid_promotion_option(self, mouse_pos: tuple[int, int]) -> int | None:
+    def get_valid_promotion_option(
+        self, mouse_pos: tuple[int, int]
+    ) -> int | None:
         """
         Checks if a valid promotion was selected, and if so returns the selected option as an index value that corresponds
         with the values available in the self.img_options attribute, otherwise returns None.
@@ -101,7 +105,7 @@ class PromotionMenu:
         for i in range(options_count):
             square = pygame.Surface((SQUARESIZE, SQUARESIZE))
             square.fill(GREY)
-            img = pygame.image.load(f"./Assets/{self.image_options[i]}.png")
+            img = pygame.image.load(f'./Assets/{self.image_options[i]}.png')
             img = pygame.transform.smoothscale(img, (SQUARESIZE, SQUARESIZE))
             square.blit(img, (0, 0))
             self.surface.blit(square, (i * SQUARESIZE, 0))
@@ -110,4 +114,4 @@ class PromotionMenu:
         """
         Returns the type of the piece as a str
         """
-        return self.image_options[promotion_option].split(sep="_")[0]
+        return self.image_options[promotion_option].split(sep='_')[0]

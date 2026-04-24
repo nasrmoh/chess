@@ -1,6 +1,14 @@
-import pygame 
+import pygame
 from .piece_view import PieceView
-from .constants import BOARDPOSX, BOARDPOSY, SQUARESIZE, SQUARECOUNT, ALPHA_FLAG, DARKCOLOR, LIGHTCOLOR
+from .constants import (
+    BOARDPOSX,
+    BOARDPOSY,
+    SQUARESIZE,
+    SQUARECOUNT,
+    ALPHA_FLAG,
+    DARKCOLOR,
+    LIGHTCOLOR,
+)
 
 
 class BoardView:
@@ -10,9 +18,12 @@ class BoardView:
             (SQUARECOUNT * SQUARESIZE, SQUARECOUNT * SQUARESIZE)
         )
         self.highlighted_surface: pygame.Surface = pygame.Surface(
-            (SQUARECOUNT * SQUARESIZE, SQUARECOUNT * SQUARESIZE), flags=ALPHA_FLAG
+            (SQUARECOUNT * SQUARESIZE, SQUARECOUNT * SQUARESIZE),
+            flags=ALPHA_FLAG,
         )
-        self.rect: pygame.Rect = self.surface.get_rect(topleft=(BOARDPOSX, BOARDPOSY))
+        self.rect: pygame.Rect = self.surface.get_rect(
+            topleft=(BOARDPOSX, BOARDPOSY)
+        )
         self.highlighted_squares: dict[pygame.Color, tuple[int, int]] = {}
         self._draw_base_board()
 
@@ -82,9 +93,7 @@ class BoardView:
         square = pygame.Surface((SQUARESIZE, SQUARESIZE))
         if color is None:
             color = (
-                DARKCOLOR
-                if (row_index + col_index) % 2 == 1
-                else LIGHTCOLOR
+                DARKCOLOR if (row_index + col_index) % 2 == 1 else LIGHTCOLOR
             )
         flags = ALPHA_FLAG if highlight else 0
         square = pygame.Surface((SQUARESIZE, SQUARESIZE), flags=flags)
@@ -92,9 +101,11 @@ class BoardView:
             square.fill(*color, 128)
         else:
             square.fill(color)
-        self.surface.blit(square, (col_index * SQUARESIZE, row_index * SQUARESIZE))
+        self.surface.blit(
+            square, (col_index * SQUARESIZE, row_index * SQUARESIZE)
+        )
 
-    def draw_all_pieces(self, grid : list[list[int | None]], views_by_id):
+    def draw_all_pieces(self, grid: list[list[int | None]], views_by_id):
         """
         Draws all pieces located on the board
 
@@ -110,7 +121,7 @@ class BoardView:
                     piece_view = views_by_id[contents]
                     self.draw_piece(piece_view, (row, col))
 
-    def get_abs_pos(self, square : tuple[int, int]) -> tuple[int, int]:
+    def get_abs_pos(self, square: tuple[int, int]) -> tuple[int, int]:
         """
         converts a grid pos (row, col) into a absolute window screen position (x, y)
 
@@ -128,13 +139,15 @@ class BoardView:
         """
         row, col = square
         if not self.in_bounds((row, col)):
-            raise ValueError(f"No position corresponds to grid position ({row}, {col})")
+            raise ValueError(
+                f'No position corresponds to grid position ({row}, {col})'
+            )
         return (
             BOARDPOSX + col * SQUARESIZE,
             BOARDPOSY + row * SQUARESIZE,
         )
 
-    def draw_piece(self, piece_view : PieceView, square: tuple[int,int]):
+    def draw_piece(self, piece_view: PieceView, square: tuple[int, int]):
         """
         Draws the piece on the game window at a specific board position (row, col)
 
@@ -183,7 +196,7 @@ class BoardView:
         else:
             return (None, None)
 
-    def in_bounds(self, square : tuple[int, int]) -> bool:
+    def in_bounds(self, square: tuple[int, int]) -> bool:
         """
         Returns if a position is contained within the board
 
@@ -219,11 +232,13 @@ class BoardView:
         Clears the list containing highlighted squares, has no visual component.
         """
         self.highlighted_squares = {}
-        
+
     def draw_menu(self, promo):
         """
         Draws the promotion menu, on the game window's surface,
         Must be called after background and piece surfaces are drawn
         """
         ## Perhaps move this method out of the board class and into the menu class
-        self.window.blit(promo.surface, (promo.x + BOARDPOSX, promo.y + BOARDPOSY))
+        self.window.blit(
+            promo.surface, (promo.x + BOARDPOSX, promo.y + BOARDPOSY)
+        )
