@@ -2,7 +2,7 @@ import pygame
 from .piece import Piece
 from .constants import (
     WHITE,
-    SQUARESIZE,
+    SQUARE_SIZE,
     BOARDPOSX,
     BOARDPOSY,
 )

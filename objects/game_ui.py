@@ -1,9 +1,9 @@
 from .constants import (
-    WINDOWWIDTH,
-    WINDOWHEIGHT,
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
     GREY,
     WHITE,
-    SQUARESIZE,
+    SQUARE_SIZE,
     FPS,
     ACTION_MOUSE_PRESSED,
     ACTION_QUIT,
@@ -32,7 +32,7 @@ class GameUI:
         # display done
         # view dict
         self.game_state = game_state
-        self.window = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
+        self.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption('Chess')
         self.window.fill(GREY)   # ui
         self.sprite_cache = self.__build_sprite_cache(game_state)
@@ -52,7 +52,7 @@ class GameUI:
             else:
                 surface = pygame.image.load(f'./Assets/{piece_kind}_black.png')
             surface = pygame.transform.smoothscale(
-                surface, (SQUARESIZE, SQUARESIZE)
+                surface, (SQUARE_SIZE, SQUARE_SIZE)
             )
             sprite_cache[(piece_kind, piece_color)] = surface
         return sprite_cache
@@ -75,7 +75,7 @@ class GameUI:
             ACTION_QUIT: False,
             ACTION_MOUSE_PRESSED: False,
             ACTION_SELECTED_SQUARE: (None, None),
-            ACTION_PROMOTION_OPTION: (None),
+            ACTION_PROMOTION_OPTION: None,
         }
         for event in pygame.event.get():
             if event.type == QUIT:

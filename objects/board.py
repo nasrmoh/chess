@@ -1,7 +1,7 @@
 from __future__ import annotations
 from copy import copy
 from .constants import (
-    SQUARECOUNT,
+    SQUARE_COUNT,
     PAWN,
     ROOK,
     BISHOP,
@@ -59,7 +59,7 @@ class GameBoard:
         returns the contents of a square, either a piece, or None indicating the square is empty
         """
         row, col = square
-        if not (0 <= row < SQUARECOUNT and 0 <= col < SQUARECOUNT):
+        if not (0 <= row < SQUARE_COUNT and 0 <= col < SQUARE_COUNT):
             raise ValueError("Invalid row or column")
         return self.grid[row][col]
 
@@ -105,8 +105,8 @@ class GameBoard:
         move_dict = {}
         found_count = 0
         ally_count = team.get_count_active()
-        for row in range(SQUARECOUNT):
-            for col in range(SQUARECOUNT):
+        for row in range(SQUARE_COUNT):
+            for col in range(SQUARE_COUNT):
                 if found_count == ally_count:
                     break
                 piece = self.get_square_contents((row, col))
@@ -119,7 +119,7 @@ class GameBoard:
 
     def in_bounds(self, square: tuple[int, int]) -> bool:
         row, col = square
-        return (0 <= row < SQUARECOUNT) and (0 <= col < SQUARECOUNT)
+        return (0 <= row < SQUARE_COUNT) and (0 <= col < SQUARE_COUNT)
 
     def move_piece(
         self,
@@ -192,8 +192,8 @@ class GameBoard:
 
         enemy_count = enemy_team.get_count_active()
         found_count = 0
-        for row in range(SQUARECOUNT):
-            for col in range(SQUARECOUNT):
+        for row in range(SQUARE_COUNT):
+            for col in range(SQUARE_COUNT):
                 if found_count == enemy_count:  # found all enemies stop
                     break
                 possible_enemy = self.grid[row][col]

@@ -3,11 +3,11 @@ from .piece_view import PieceView
 from .constants import (
     BOARDPOSX,
     BOARDPOSY,
-    SQUARESIZE,
-    SQUARECOUNT,
+    SQUARE_SIZE,
+    SQUARE_COUNT,
     ALPHA_FLAG,
-    DARKCOLOR,
-    LIGHTCOLOR,
+    DARK_COLOR,
+    LIGHT_COLOR,
 )
 
 
@@ -15,10 +15,10 @@ class BoardView:
     def __init__(self, window: pygame.Surface):
         self.window = window
         self.surface: pygame.Surface = pygame.Surface(
-            (SQUARECOUNT * SQUARESIZE, SQUARECOUNT * SQUARESIZE)
+            (SQUARE_COUNT * SQUARE_SIZE, SQUARE_COUNT * SQUARE_SIZE)
         )
         self.highlighted_surface: pygame.Surface = pygame.Surface(
-            (SQUARECOUNT * SQUARESIZE, SQUARECOUNT * SQUARESIZE),
+            (SQUARE_COUNT * SQUARE_SIZE, SQUARE_COUNT * SQUARE_SIZE),
             flags=ALPHA_FLAG,
         )
         self.rect: pygame.Rect = self.surface.get_rect(
@@ -32,8 +32,8 @@ class BoardView:
         Colors the board with a checkerboard style, with the first (top-left) square being the self.light_color
         """
         # we go through the board and for each square, we "blit" onto the board the current square.
-        for row in range(SQUARECOUNT):
-            for col in range(SQUARECOUNT):
+        for row in range(SQUARE_COUNT):
+            for col in range(SQUARE_COUNT):
                 self.color_square(row, col)
 
     def highlight_square(
@@ -48,10 +48,10 @@ class BoardView:
             color (pygame.Color): The highlight Color
             alpha (int): Transparency level from 0-255, Optional. Defaults to 128
         """
-        square = pygame.Surface((SQUARESIZE, SQUARESIZE), flags=ALPHA_FLAG)
+        square = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), flags=ALPHA_FLAG)
         square.fill((*color, alpha))
         self.highlighted_surface.blit(
-            square, (col_index * SQUARESIZE, row_index * SQUARESIZE)
+            square, (col_index * SQUARE_SIZE, row_index * SQUARE_SIZE)
         )
 
     def draw_all_highlights(self, highlight_dict):
@@ -90,19 +90,19 @@ class BoardView:
             highlight (bool, optional) : Flag to check if semi-transparent highlight is used. Default is False
 
         """
-        square = pygame.Surface((SQUARESIZE, SQUARESIZE))
+        square = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE))
         if color is None:
             color = (
-                DARKCOLOR if (row_index + col_index) % 2 == 1 else LIGHTCOLOR
+                DARK_COLOR if (row_index + col_index) % 2 == 1 else LIGHT_COLOR
             )
         flags = ALPHA_FLAG if highlight else 0
-        square = pygame.Surface((SQUARESIZE, SQUARESIZE), flags=flags)
+        square = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), flags=flags)
         if highlight:
             square.fill(*color, 128)
         else:
             square.fill(color)
         self.surface.blit(
-            square, (col_index * SQUARESIZE, row_index * SQUARESIZE)
+            square, (col_index * SQUARE_SIZE, row_index * SQUARE_SIZE)
         )
 
     def draw_all_pieces(self, grid: list[list[int | None]], views_by_id):
@@ -114,8 +114,8 @@ class BoardView:
 
         This method assumes all surface details are correctly implemented for any given piece
         """
-        for row in range(SQUARECOUNT):
-            for col in range(SQUARECOUNT):
+        for row in range(SQUARE_COUNT):
+            for col in range(SQUARE_COUNT):
                 contents = grid[row][col]
                 if contents is not None:
                     piece_view = views_by_id[contents]
@@ -143,8 +143,8 @@ class BoardView:
                 f'No position corresponds to grid position ({row}, {col})'
             )
         return (
-            BOARDPOSX + col * SQUARESIZE,
-            BOARDPOSY + row * SQUARESIZE,
+            BOARDPOSX + col * SQUARE_SIZE,
+            BOARDPOSY + row * SQUARE_SIZE,
         )
 
     def draw_piece(self, piece_view: PieceView, square: tuple[int, int]):
@@ -186,8 +186,8 @@ class BoardView:
         if not self.rect.collidepoint(mouse_x, mouse_y):
             return (None, None)
 
-        col = (mouse_x - BOARDPOSX) // SQUARESIZE
-        row = (mouse_y - BOARDPOSY) // SQUARESIZE
+        col = (mouse_x - BOARDPOSX) // SQUARE_SIZE
+        row = (mouse_y - BOARDPOSY) // SQUARE_SIZE
 
         # handles the rare case that they select right most or bottom most edge,
         # leading to row or column value of 8, illegal
@@ -205,7 +205,7 @@ class BoardView:
             col(int): The positions col
         """
         row, col = square
-        return (0 <= row < SQUARECOUNT) and (0 <= col < SQUARECOUNT)
+        return (0 <= row < SQUARE_COUNT) and (0 <= col < SQUARE_COUNT)
 
     def draw_board(self):
         """
