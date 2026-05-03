@@ -36,7 +36,7 @@ class GameUI:
         pygame.display.set_caption('Chess')
         self.window.fill(GREY)   # ui
         self.sprite_cache = self.__build_sprite_cache(game_state)
-        self.views_by_id = self.__build_views_by_id()
+        self.views_by_piece = self.__build_views_by_piece()
         self.board_view = BoardView(self.window)
         self.promotion_menu = None
 
@@ -44,8 +44,7 @@ class GameUI:
         self, game_state: GameState
     ) -> dict[tuple[str, str], Surface]:
         sprite_cache = {}
-        pieces_by_id = game_state.board.pieces_by_id
-        for piece in set(pieces_by_id.values()):   # may cause problems
+        for piece in game_state.light_team.active_pieces + game_state.dark_team.active_pieces:   # may cause problems
             piece_kind = piece.kind
             piece_color = piece.color
             if piece_color == WHITE:
@@ -58,14 +57,13 @@ class GameUI:
             sprite_cache[(piece_kind, piece_color)] = surface
         return sprite_cache
 
-    def __build_views_by_id(self):
-        pieces_by_id = self.game_state.board.pieces_by_id
-        views_by_id = {}
-        for id, piece in pieces_by_id.items():
-            views_by_id[id] = PieceView(
+    def __build_views_by_piece(self):
+        views_by_pieces = {}
+        for piece in self.game_state.light_team.active_pieces + self.game_state.dark_team.active_pieces:
+            views_by_pieces[piece] = PieceView(
                 self.sprite_cache[piece.kind, piece.color]
             )
-        return views_by_id
+        return views_by_pieces
 
     def handle_events(
         self,
@@ -107,10 +105,10 @@ class GameUI:
             self.board_view.highlighted_squares
         )
         self.board_view.draw_all_pieces(
-            self.game_state.board.struct, self.views_by_id
+            self.game_state.board.grid, self.views_by_piece
         )  # draw all pieces onto the board
         if self.promotion_menu:
-            self.board.draw_menu(self.promotion_menu)
+            self.board_view.draw_menu(self.promotion_menu)
         pygame.display.update()
 
     def apply_commands(self, commands: list[dict]):
@@ -123,7 +121,7 @@ class GameUI:
             elif command_type == COMMAND_CLEAR_HIGHLIGHTS:
                 self.board_view.clear_highlighted_squares()
             elif command_type == COMMAND_BUILD_PROMO:
-                color = payload[PAYLOAD_COLOR]
+                color = payload
                 self.build_promotion_menu(color)
             elif command_type == COMMAND_TEARDOWN_PROMO:
                 self.teardown_promo_menu()

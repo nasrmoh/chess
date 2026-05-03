@@ -1,118 +1,99 @@
-import pygame
+from __future__ import annotations
 from .constants import (
     WHITE,
     BLACK,
-    SQUARESIZE,
     DIAGONALS,
     CARDINALS,
     KNIGHT_OFFSET,
+    PAWN, KNIGHT, ROOK, KING, BISHOP, QUEEN
 )
+from abc import ABC, abstractmethod
 
 
-class Piece:
-    def __init__(self, color: pygame.Color, kind: str):
+class Piece(ABC):
+    def __init__(self, color: str, pos : tuple[int, int], has_moved = False):
         """
         Base class used to represent a chess piece.
         """
-        self.size = SQUARESIZE
-        self.kind = kind
         self.color = color
-        self.has_moved = False
+        self.has_moved = has_moved
+        self.pos = pos
+        self.kind = ""
 
-    def generate_valid_moves(self, from_square: tuple[int, int], board):
-        # exists purely to be over written by subclasses
-        raise NotImplementedError
+    @abstractmethod
+    def generate_pseudo_legal_moves(
+        self, source_square: tuple[int, int], board
+    ) -> list[tuple[int, int]]:
+        pass
 
-    def update_after_move(self):
+    def update_after_move(self, to_square):
         """
-        On successful movement, updates the self.has_moved attribute to prevent "double-jumps".
+        updates the pieces move related attributes
         """
         if not self.has_moved:
             self.has_moved = True
+        self.pos = to_square
 
-    def is_valid_move(
-        self, from_square: tuple[int, int], to_square: tuple[int, int], board
-    ):
-        """
-        Checks if a move is valid, return True. Otherwise False
-        """
-        return to_square in self.generate_valid_moves(from_square, board)
+    def is_pseudo_legal_move(
+        self,
+        source_square: tuple[int, int],
+        dest_square: tuple[int, int],
+        board,
+    ) -> bool:
+        return dest_square in self.generate_pseudo_legal_moves(source_square, board)
 
-    def is_ally(self, other) -> bool:
-        """
-        Checks if the other piece is of the same team. i.e. is an ally
-
-        Returns:
-            Bool
-        """
-        assert isinstance(other, Piece)
+    def is_ally(self, other: Piece) -> bool:
         return self.color == other.color
 
-    def is_enemy(self, other) -> bool:
-        """
-        Checks if the other piece is of a different team. i.e. is an enemy
-        Returns:
-            Bool
-        """
-        assert isinstance(other, Piece)
-        return self.color != other.color
+    def is_enemy(self, other: Piece) -> bool:
+        return not self.is_ally(other)
 
-    def is_promotable(self, from_square) -> bool:
+    def is_promotable(self, source_square) -> bool:
         """
-        Checks if the Piece can be promoted, if it is a pawn this method will be overwritten, otherwise returns False.
+        Returns whether a piece can be promoted
         """
         return False
-
-    def set_id(self, id: int):
-        self.id = id
-
-    def get_kind(self):
-        return self.kind
 
 
 class SlidingPiece(Piece):
     """
-    Represents pieces that "slide" i.e. Queens, Rooks, and Bishops.
+    Represents pieces that "slide" i.e., Queens, Rooks, and Bishops.
     Exists primarily so that the method get_sliding_moves is not accessible by other piece
-    sub-classes.
+    subclasses.
     """
 
-    def __init__(self, color: pygame.Color, kind: str):
-        super().__init__(color, kind)
+    def __init__(self, color: str, pos : tuple[int, int]):
+        super().__init__(color, pos)
+
+    @abstractmethod
+    def generate_pseudo_legal_moves(
+        self, source_square: tuple[int, int], board
+    ) -> list[tuple[int, int]]:
+        pass
 
     def get_sliding_moves(
         self,
-        from_square: tuple[int, int],
+        source_square: tuple[int, int],
         board,
         directions: list[tuple[int, int]],
     ) -> list[tuple[int, int]]:
         """
-        Generates valid sliding moves for the following pieces Bishop, Rook, Queen.
-
-        Slides in the direction specified by directions argument until either blocked by an ally or blocked by an enemy, if blocked
-        by an enemy adds that final square as a valid move
-
-        Args:
-            board is a Board Object directions
-            list[tuple[int, int]: directions relative to the original position of the piece.
-
-        Returns:
-            list[tuple[int, int]] : A list of valid (row, col) moves.
+        Generates pseudo-legal moves for sliding pieces (rook, bishop, queen) by extending in each direction until blocked.
+        Includes the first enemy square, stops at allies.
         """
-        row, col = from_square
-        valid_moves = []
+        row, col = source_square
+        pseudo_legal_moves = []
         for dr, dc in directions:
             new_row = row + dr
             new_col = col + dc
             while board.in_bounds((new_row, new_col)):
-                contents = board.get_square_contents((new_row, new_col))
-                possible_piece_id = contents
+                possible_piece = board.get_square_contents((new_row, new_col))
                 if (
-                    possible_piece_id is None
-                ):  # no piece id i.e. None, add move
-                    valid_moves.append((new_row, new_col))
-                elif self.is_enemy(board.pieces_by_id[possible_piece_id]):
-                    valid_moves.append(
+                    possible_piece is None
+                ):  # no piece id found, i.e., empty square then add the move
+                    pseudo_legal_moves.append((new_row, new_col))
+                elif self.is_enemy(possible_piece):
+                    pseudo_legal_moves.append(
                         (new_row, new_col)
                     )  # enemy, add, then stop sliding
                     break
@@ -121,47 +102,40 @@ class SlidingPiece(Piece):
                     break
                 new_row += dr
                 new_col += dc
-        return valid_moves
+        return pseudo_legal_moves
 
 
 class Pawn(Piece):
-    def __init__(self, color: pygame.Color, kind: str):
-        super().__init__(color, kind)
-        self.has_moved = False
+    def __init__(self, color: str, pos : tuple[int, int]):
+        super().__init__(color, pos)
+        self.kind = PAWN
 
-    def generate_valid_moves(
-        self, from_square: tuple[int, int], board
+    def generate_pseudo_legal_moves(
+        self, source_square: tuple[int, int], board
     ) -> list[tuple[int, int]]:
         """
-        Generates a list of valid pawn moves
-
+        Generates a list of pseudo-legal pawn moves
         Includes :
-            Single and double jumps assuming the path is empty and piece has not moved for the latter
+            Single and double jumps assuming the path is empty and a piece has not moved for the latter
             Diagonal captures assuming there is an enemy piece
-
-        Args : board a Board Object
-
-        Returns : list[tuple[int, int]]:  Valid moves for a pawn
         """
-        row, col = from_square
-        valid_moves = []
+        row, col = source_square
+        pseudo_legal_moves = []
         dv = -1 if self.color == WHITE else 1  # vertical direction
         one_forward = row + dv
         two_forward = row + (dv * 2)
 
         # single jump moves
-        if board.in_bounds((one_forward, col)) and board.is_empty(
-            (one_forward, col)
-        ):
-            valid_moves.append((one_forward, col))
+        if board.in_bounds((one_forward, col)) and board.is_empty((one_forward, col)):
+            pseudo_legal_moves.append((one_forward, col))
 
-            # double jump moves (check only if there is a valid single move)
+            # double jump moves (check only if there is a pseudo-legal single move)
             if (
                 not self.has_moved
                 and board.is_empty((two_forward, col))
                 and board.in_bounds((two_forward, col))
             ):
-                valid_moves.append((two_forward, col))
+                pseudo_legal_moves.append((two_forward, col))
 
         # Diagonals
         for dh in [-1, 1]:
@@ -169,23 +143,21 @@ class Pawn(Piece):
             if board.in_bounds((one_forward, new_col)) and not board.is_empty(
                 (one_forward, new_col)
             ):
-                possible_piece_id = board.get_square_contents(
-                    (one_forward, new_col)
-                )
-                if (possible_piece_id is not None) and self.is_enemy(
-                    board.get_pieces_by_id(possible_piece_id)
+                possible_piece = board.get_square_contents((one_forward, new_col))
+                if (possible_piece is not None) and self.is_enemy(
+                    possible_piece
                 ):
-                    valid_moves.append((one_forward, new_col))
-        return valid_moves
+                    pseudo_legal_moves.append((one_forward, new_col))
+        return pseudo_legal_moves
 
-    def is_promotable(self, from_square) -> bool:
+    def is_promotable(self, source_square) -> bool:
         """
         Checks if the Pawn can be promoted, must be called after the pawn has been moved.
         """
-        row, col = from_square
+        row, col = source_square
         dark_main_rank = 0
         light_main_rank = 7
-        if self.kind == 'pawn':
+        if type(self) is Pawn:
             if (self.color == WHITE and row == dark_main_rank) or (
                 self.color == BLACK and row == light_main_rank
             ):
@@ -194,86 +166,89 @@ class Pawn(Piece):
 
 
 class Knight(Piece):
-    def __init__(self, color: pygame.Color, kind: str):
-        super().__init__(color, kind)
+    def __init__(self, color: str, pos : tuple[int, int]):
+        super().__init__(color, pos)
+        self.kind = KNIGHT
 
-    def generate_valid_moves(
-        self, from_square: tuple[int, int], board
+    def generate_pseudo_legal_moves(
+        self, source_square: tuple[int, int], board
     ) -> list[tuple[int, int]]:
         """
-        Generates a list of valid knight moves
+        Generates a list of pseudo-legal knight moves
 
         Each move is a row column tuple representing a square that a knight can move to, assuming that the square is
         empty or occupied by an enemy piece.
 
         Args : board : a Board Object
 
-        Returns : list[tuple[int, int]]:  Valid moves for a knight
+        Returns : list[tuple[int, int]]: pseudo-legal moves for a knight
         """
-        row, col = from_square
-        valid_moves = []
+        row, col = source_square
+        pseudo_legal_moves = []
         for dr, dc in KNIGHT_OFFSET:
             new_row, new_col = row + dr, col + dc
             if board.in_bounds(
                 (new_row, new_col)
             ):  # check move is actually on the board
-                possible_piece_id = board.get_square_contents(
+                possible_piece = board.get_square_contents(
                     (new_row, new_col)
                 )  # check if there is a piece to be captured
-                if (possible_piece_id == None) or self.is_enemy(
-                    board.get_pieces_by_id(possible_piece_id)
+                if (possible_piece is None) or self.is_enemy(
+                    possible_piece
                 ):
-                    valid_moves.append((new_row, new_col))
-        return valid_moves
+                    pseudo_legal_moves.append((new_row, new_col))
+        return pseudo_legal_moves
 
 
 class Bishop(SlidingPiece):
-    def __init__(self, color: pygame.Color, kind: str):
-        super().__init__(color, kind)
+    def __init__(self, color: str, pos : tuple[int, int]):
+        super().__init__(color, pos)
+        self.kind = BISHOP
 
-    def generate_valid_moves(
-        self, from_square: tuple[int, int], board
+    def generate_pseudo_legal_moves(
+        self, source_square: tuple[int, int], board
     ) -> list[tuple[int, int]]:
         """
         Generates the diagonal sliding moves via the get_sliding_moves method.
         """
-        return self.get_sliding_moves(from_square, board, DIAGONALS)
+        return self.get_sliding_moves(source_square, board, DIAGONALS)
 
 
 class Rook(SlidingPiece):
-    def __init__(self, color: pygame.Color, kind: str):
-        super().__init__(color, kind)
+    def __init__(self, color: str, pos: tuple[int, int]):
+        super().__init__(color, pos)
+        self.kind = ROOK
 
-    def generate_valid_moves(
-        self, from_square: tuple[int, int], board
+    def generate_pseudo_legal_moves(
+        self, source_square: tuple[int, int], board
     ) -> list[tuple[int, int]]:
         """
         Generates the cardinal sliding moves via the get_sliding_moves method.
         """
-        return self.get_sliding_moves(from_square, board, CARDINALS)
+        return self.get_sliding_moves(source_square, board, CARDINALS)
 
 
 class Queen(SlidingPiece):
-    def __init__(self, color: pygame.Color, kind: str):
-        super().__init__(color, kind)
+    def __init__(self, color: str, pos : tuple[int, int]):
+        super().__init__(color, pos)
+        self.kind = QUEEN
 
-    def generate_valid_moves(
-        self, from_square, board
+    def generate_pseudo_legal_moves(
+        self, source_square, board
     ) -> list[tuple[int, int]]:
         """
-        Generates the Queens movements combinging digonal and cardinal sliding moves.
+        Generates the Queens movements combining digonal and cardinal sliding moves.
         """
-        return self.get_sliding_moves(
-            from_square, board, CARDINALS + DIAGONALS
-        )
+        return self.get_sliding_moves(source_square, board, CARDINALS + DIAGONALS)
 
 
 class King(Piece):
-    def __init__(self, color: pygame.Color, kind: str):
-        super().__init__(color, kind)
+    def __init__(self, color: str, pos : tuple[int, int]):
+        super().__init__(color, pos)
         self.in_check = False
         self.long_rook = None
         self.near_rook = None
+        self.kind = KING
 
     def set_in_check(self, value):
         assert type(value) is bool
@@ -282,19 +257,21 @@ class King(Piece):
     def get_check_status(self):
         return self.in_check
 
-    def generate_valid_moves(self, from_square: tuple[int, int], board):
+    def generate_pseudo_legal_moves(
+        self, source_square: tuple[int, int], board
+    ) -> list[tuple[int, int]]:
         """
-        Generates the valid moves for the King piece
+        Generates the pseudo-legal moves for the King piece
 
         Each move is a (row, col) tuple assuming the move is empty or is occupied by an enemy piece.
 
         Args : board is a Board object
 
-        Returns :list[tuple[int, int]] : A list of moves.
+        Returns: list[tuple[int, int]]: A list of moves.
 
         """
-        row, col = from_square
-        valid_moves = []
+        row, col = source_square
+        pseudo_legal_moves = []
         # Directional Moves
         directions = CARDINALS + DIAGONALS
         for dr, dc in directions:
@@ -302,13 +279,11 @@ class King(Piece):
             new_col = col + dc
             if board.in_bounds((new_row, new_col)):
                 # now validate
-                possible_piece_id = board.get_square_contents(
-                    (new_row, new_col)
-                )
-                if (possible_piece_id is None) or self.is_enemy(
-                    board.get_pieces_by_id(possible_piece_id)
+                possible_piece = board.get_square_contents((new_row, new_col))
+                if (possible_piece is None) or self.is_enemy(
+                    possible_piece
                 ):
-                    valid_moves.append((new_row, new_col))
+                    pseudo_legal_moves.append((new_row, new_col))
 
         # Castling Move
         # To castle we need to make some checks
@@ -329,7 +304,7 @@ class King(Piece):
                         squares_empty = False
                         break
                 if squares_empty:
-                    valid_moves.append((self.row, long_rook.col))
+                    pseudo_legal_moves.append((self.row, long_rook.col))
 
 
 
@@ -344,4 +319,4 @@ class King(Piece):
             long_rook = board.get_square_contents(self.row, )
         """
 
-        return valid_moves
+        return pseudo_legal_moves

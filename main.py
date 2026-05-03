@@ -11,7 +11,6 @@ def setup():
 
 
 def main():
-    # Setup and Initialization
     pygame.init()
     game_state, game_ui, clock = setup()
     while game_state.get_game_is_running():

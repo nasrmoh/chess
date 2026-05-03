@@ -28,8 +28,8 @@ class PromotionMenu:
         rect (pygame.Rect): Position and size of the board
     """
 
-    def __init__(self, color: pygame.Color):
-        self.color: pygame.Color = color
+    def __init__(self, color: str):
+        self.color = color
         self.image_options: list[str] = self._build_img_options()
         self.w: int = len(self.image_options) * SQUARESIZE
         self.h: int = SQUARESIZE
@@ -53,17 +53,10 @@ class PromotionMenu:
 
         """
         options = []
-        if self.color == BLACK:
-            color_str = 'black'
-        elif self.color == WHITE:
-            color_str = 'white'
-        else:
-            raise TypeError(f'Invalid Color : {self.color}')
-
         piece_types = ['rook', 'bishop', 'knight', 'queen']
         options = []
         for piece in piece_types:
-            options.append(f'{piece}_{color_str}')
+            options.append(f'{piece}_{self.color}')
         return options
 
     def get_valid_promotion_option(
@@ -98,7 +91,7 @@ class PromotionMenu:
         """
         Creates the basic surface of the promotion menu.
 
-        Assumes that the self.surface attribute and the corrersponding image file paths exist
+        Assumes that the self.surface attribute and the corresponding image file paths exist
         """
         # we go through the board and for each square, we "blit" onto the board the current square.
         options_count = len(self.image_options)

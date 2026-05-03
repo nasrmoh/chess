@@ -25,10 +25,17 @@ from .constants import (
     WHITE,
     BLACKPLAYER,
     WHITEPLAYER,
+    INITIAL_POSITION,
+    ROOK,
+    KNIGHT,
+    BISHOP,
+    QUEEN,
+    KING,
+    PAWN,
 )
 from .board import GameBoard
 from pygame.locals import *
-from .piece import Piece
+from .piece import Piece, Rook, Knight, Bishop, Queen, King, Pawn
 from .team import Team
 import pygame
 import sys
@@ -44,24 +51,62 @@ class GameState:
     def __init__(self):
         self.selected_square: tuple[int, int] | None = None
         # Selected piece for highlighting and moving of pieces
-        self.captured_piece_id: int | None = (
+        self.captured_piece: Piece | None = (
             None  # captured pieces during current players turn
         )
         self.move_dict: dict[Piece, list[tuple[int, int]]] | None = None
         # a move dictionary for the legal moves a player can make
-        self.checking_pieces: dict[
-            Piece, tuple[int, int]
-        ] = (
+        self.checking_pieces: dict[Piece, tuple[int, int]] = (
             {}
         )  # pieces of the other player that are checking the current player
         self.state: int = GAMESTART  # state variable
-        self.board = GameBoard(SQUARESIZE, SQUARECOUNT)
-        self.dark_team = Team(BLACKPLAYER, BLACK)   # Game Data
-        self.light_team = Team(WHITEPLAYER, WHITE)   # Game Data
-        self.board.setup_pieces(self.dark_team, self.light_team)
+        self.board = GameBoard(SQUARECOUNT)
+        self.dark_team = Team(BLACKPLAYER, BLACK)  # Game Data
+        self.light_team = Team(WHITEPLAYER, WHITE)  # Game Data
+        self.setup_pieces()
         self.current_player: Team = self.light_team
         self.other_player: Team = self.dark_team
         self.game_is_running = True
+
+    def setup_dark_pieces(self):
+        pieces = []
+        pieces.append(Rook(self.dark_team.color, INITIAL_POSITION[BLACK][ROOK][0]))
+        pieces.append(Knight(self.dark_team.color, INITIAL_POSITION[BLACK][KNIGHT][0]))
+        pieces.append(Bishop(self.dark_team.color, INITIAL_POSITION[BLACK][BISHOP][0]))
+        pieces.append(Queen(self.dark_team.color, INITIAL_POSITION[BLACK][QUEEN][0]))
+        king = King(self.dark_team.color, INITIAL_POSITION[BLACK][KING][0])
+        self.dark_team.king = king
+        pieces.append(king)
+        pieces.append(Bishop(self.dark_team.color, INITIAL_POSITION[BLACK][BISHOP][1]))
+        pieces.append(Knight(self.dark_team.color, INITIAL_POSITION[BLACK][KNIGHT][1]))
+        pieces.append(Rook(self.dark_team.color, INITIAL_POSITION[BLACK][ROOK][1]))
+        for square in INITIAL_POSITION[BLACK][PAWN]:
+            pieces.append(Pawn(self.dark_team.color, square))
+        self.dark_team.active_pieces += pieces
+        for piece in pieces:
+            self.board.place_piece(piece)
+
+    def setup_light_pieces(self):
+        pieces = []
+        pieces.append(Rook(self.light_team.color, INITIAL_POSITION[WHITE][ROOK][0]))
+        pieces.append(Knight(self.light_team.color, INITIAL_POSITION[WHITE][KNIGHT][0]))
+        pieces.append(Bishop(self.light_team.color, INITIAL_POSITION[WHITE][BISHOP][0]))
+        pieces.append(Queen(self.light_team.color, INITIAL_POSITION[WHITE][QUEEN][0]))
+        king = King(self.light_team.color, INITIAL_POSITION[WHITE][KING][0])
+        self.light_team.king = king
+        pieces.append(king)
+        pieces.append(Bishop(self.light_team.color, INITIAL_POSITION[WHITE][BISHOP][1]))
+        pieces.append(Knight(self.light_team.color, INITIAL_POSITION[WHITE][KNIGHT][1]))
+        pieces.append(Rook(self.light_team.color, INITIAL_POSITION[WHITE][ROOK][1]))
+        for square in INITIAL_POSITION[WHITE][PAWN]:
+            pieces.append(Pawn(self.light_team.color, square))
+        self.light_team.active_pieces += pieces
+        for piece in pieces:
+            self.board.place_piece(piece)
+
+    def setup_pieces(self):
+        self.setup_dark_pieces()
+        self.setup_light_pieces()
 
     def update_state(self, actions):
         ## Note that these method depends on hook methods, i.e. the on_enter_new_state method.
@@ -105,15 +150,15 @@ class GameState:
             commands.append(command)
             # self.teardown_promo_menu() # convert to command
         elif self.state == ENDTURN:
-            self.set_captured_piece(None)   # game state info
-            self.set_selected_square(None)   # don't know about this one
+            self.set_captured_piece(None)  # game state info
+            self.set_selected_square(None)  # don't know about this one
             """
             self.other_player.king.set_in_check(
                 False
             )  # game state info
             """
-            self.checking_pieces = {}   # game state info
-            self.move_dict = {}   # game state info
+            self.checking_pieces = {}  # game state info
+            self.move_dict = {}  # game state info
 
     def on_enter_new_state(self, state: int, actions, commands):
         """
@@ -128,9 +173,9 @@ class GameState:
                 self.current_player, self.other_player
             )
             if self.checking_pieces:
-                self.current_player.set_king_in_check(self.board, True)
+                self.current_player.set_king_in_check(True)
             else:
-                self.current_player.set_king_in_check(self.board, False)
+                self.current_player.set_king_in_check(False)
             self.move_dict = self.board.build_move_dict(
                 self.current_player, self.other_player
             )
@@ -145,9 +190,7 @@ class GameState:
                     }
                 }
 
-                square = self.board.square_by_id(
-                    self.current_player.get_king_id()
-                )
+                square = self.current_player.get_king().pos
                 command_highlight_checked_king = {
                     COMMAND_HIGHLIGHT_SQUARES: {
                         PAYLOAD_COLOR: GOLD,
@@ -167,9 +210,7 @@ class GameState:
         elif state == SELECTMOVE:
             assert self.selected_square is not None
             # command
-            selected_piece = self.board.get_pieces_by_id(
-                self.board.get_square_contents(self.selected_square)
-            )
+            selected_piece = self.board.get_square_contents(self.selected_square)
             command_highlight_potential_moves = {
                 COMMAND_HIGHLIGHT_SQUARES: {
                     PAYLOAD_COLOR: GREEN,
@@ -188,29 +229,23 @@ class GameState:
         elif state == SELECTPROMOTION:
             assert self.selected_square is not None
             self.selected_square = actions[ACTION_SELECTED_SQUARE]
-            selected_piece = self.board.get_pieces_by_id(
-                self.board.get_square_contents(self.selected_square)
-            )
+            selected_piece = self.board.get_square_contents(self.selected_square)
             assert selected_piece.is_promotable(self.selected_square)
-            command_build_promotion_menu = {
-                COMMAND_BUILD_PROMO: selected_piece.color
-            }
+            command_build_promotion_menu = {COMMAND_BUILD_PROMO: selected_piece.color}
             commands.append(command_build_promotion_menu)
 
         elif state == ENDTURN:
-            if self.captured_piece_id is not None:
+            if self.captured_piece is not None:
                 print(
-                    f"{str(self.current_player).split()[0]} captures {str(self.other_player).split()[0]}'s {self.board.get_pieces_by_id(self.captured_piece_id).get_kind()}"
+                    f"{str(self.current_player).split()[0]} captures {str(self.other_player).split()[0]}'s {self.captured_piece.kind}"
                 )
-                self.other_player.active_pieces.remove(self.captured_piece_id)
-                self.other_player.captured_pieces.append(
-                    self.captured_piece_id
-                )
+                self.other_player.active_pieces.remove(self.captured_piece)
+                self.other_player.captured_pieces.append(self.captured_piece)
         elif state == GAMEEND:
             if self.current_player.king.get_check_status():
-                print(f'{self.other_player} Has Won, Game over')
+                print(f"{self.other_player} Has Won, Game over")
             else:
-                print(f'Stalemate, No one has won')
+                print(f"Stalemate, No one has won")
             self.end_game_is_running()
 
     def handle_game_start(self, actions, commands):
@@ -231,39 +266,30 @@ class GameState:
             if self.valid_square_selected(actions[ACTION_SELECTED_SQUARE]):
                 valid_square = actions[ACTION_SELECTED_SQUARE]
                 if not self.board.is_empty((valid_square)):
-                    selected_piece_id = self.board.get_square_contents(
-                        (valid_square)
-                    )
-                    selected_piece = self.board.get_pieces_by_id(
-                        selected_piece_id
-                    )
+                    selected_piece = self.board.get_square_contents((valid_square))
                     self.set_selected_square(valid_square)
-                    if selected_piece and self.current_player.owns(
-                        selected_piece
-                    ):
+                    if selected_piece and self.current_player.owns(selected_piece):
                         legal_moves = self.move_dict[selected_piece]
                         if legal_moves:
                             self.change_state_to(SELECTMOVE, actions, commands)
                         else:
                             self.reject_selection(
-                                actions, commands, 'Piece has no valid moves'
+                                actions, commands, "Piece has no valid moves"
                             )
                     else:
                         self.reject_selection(
                             actions,
                             commands,
-                            f'{self.print_current_player()} does not own the selected piece',
+                            f"{self.print_current_player()} does not own the selected piece",
                         )
                 else:
                     self.reject_selection(
                         actions,
                         commands,
-                        'Board is empty at selected location',
+                        "Board is empty at selected location",
                     )
             else:
-                self.reject_selection(
-                    actions, commands, 'No Valid Square was selected'
-                )
+                self.reject_selection(actions, commands, "No Valid Square was selected")
         else:
             self.continue_in_state()
 
@@ -275,42 +301,30 @@ class GameState:
         """
         # generate associated move data
         if actions[ACTION_MOUSE_PRESSED]:
-            selected_piece = self.board.get_pieces_by_id(
-                self.board.get_square_contents(self.selected_square)
-            )
+            selected_piece = self.board.get_square_contents(self.selected_square)
             legal_moves = self.move_dict[selected_piece]
             if legal_moves:
                 if self.valid_square_selected(actions[ACTION_SELECTED_SQUARE]):
                     dest_row, dest_col = actions[ACTION_SELECTED_SQUARE]
-                    if self.valid_move_selected(
-                        dest_row, dest_col, legal_moves
-                    ):
-                        self.captured_piece_id = self.board.move_piece(
-                            selected_piece,
-                            self.selected_square,
-                            (dest_row, dest_col),
+                    if self.valid_move_selected((dest_row, dest_col), legal_moves):
+                        self.captured_piece = self.board.move_piece(
+                            selected_piece, self.selected_square, (dest_row, dest_col)
                         )
                         if selected_piece.is_promotable((dest_row, dest_col)):
-                            print('You can promote your piece!')
-                            self.change_state_to(
-                                SELECTPROMOTION, actions, commands
-                            )
+                            print("You can promote your piece!")
+                            self.change_state_to(SELECTPROMOTION, actions, commands)
                         else:
                             self.change_state_to(ENDTURN, actions, commands)
                     else:
                         self.reject_selection(
                             actions,
                             commands,
-                            'Invalid move for selected piece',
+                            "Invalid move for selected piece",
                         )
                 else:
-                    self.reject_selection(
-                        actions, commands, 'Invalid Square Selected'
-                    )
+                    self.reject_selection(actions, commands, "Invalid Square Selected")
             else:
-                self.reject_selection(
-                    actions, commands, 'Piece has no valid moves'
-                )
+                self.reject_selection(actions, commands, "Piece has no valid moves")
         else:
             self.continue_in_state()
 
@@ -318,9 +332,11 @@ class GameState:
         """
         Promotion of a pawn into a new piece, must occur.
         """
+        if commands:
+            ...
         assert (
             self.promotion_menu is not None
-        ), 'Promotion Menu must exist in the SELCTPROMOTION state'
+        ), "Promotion Menu must exist in the SELCTPROMOTION state"
         if actions[ACTION_MOUSE_PRESSED]:
             promotion_option = self.promotion_menu.get_valid_promotion_option(
                 self.mouse_pos
@@ -332,14 +348,14 @@ class GameState:
                 )
                 self.change_state_to(ENDTURN)
             else:
-                print('Invalid promotion option')
+                print("Invalid promotion option")
                 self.continue_in_state()
         else:
             self.continue_in_state()
 
     def handle_end_turn(self, actions, commands):
         """This method has no operation : End of Turn does not handle user events"""
-        'End of turns can only be accessed from other states'
+        "End of turns can only be accessed from other states"
         self.update_current_player()
         self.change_state_to(STARTTURN, actions, commands)
 
@@ -350,7 +366,7 @@ class GameState:
         msg: str = None,
     ):
         if msg:
-            print(f'{msg}')
+            print(f"{msg}")
         self.change_state_to(SELECTPIECE, actions, commands)
 
     def continue_in_state(self):
@@ -385,8 +401,8 @@ class GameState:
         """
         return possible_square != (None, None)
 
-    def valid_move_selected(self, row, col, valid_moves):
-        return (row, col) in valid_moves
+    def valid_move_selected(self, square, valid_moves):
+        return square in valid_moves
 
     def get_mouse_pressed(self):
         return self.mouse_pressed
@@ -420,9 +436,9 @@ class GameState:
 
     def print_current_player(self):
         if self.current_player == self.dark_team:
-            return 'Black Player'
+            return "Black Player"
         elif self.current_player == self.light_team:
-            return 'White Player'
+            return "White Player"
 
     def move_dict_is_empty(self):
         assert self.move_dict is not None

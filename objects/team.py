@@ -1,15 +1,5 @@
-import pygame
-from .constants import (
-    SQUARECOUNT,
-    WHITEPLAYER,
-    PIECE_ROOK,
-    PIECE_KNIGHT,
-    PIECE_BISHOP,
-    PIECE_QUEEN,
-)
-from .piece import Piece, Pawn, Rook, Bishop, Knight, King, Queen
-
-
+from .constants import BLACK, WHITE
+from .piece import Piece, King
 class Team:
     """
     Represents a "team" of pieces.
@@ -25,16 +15,16 @@ class Team:
         captured_pieces (list[Piece]): A list of pieces that belong to the player and have been captured.
     """
 
-    def __init__(self, team_id: int, color: pygame.Color):
+    def __init__(self, team_id: int, color: str):
         self.team_id: int = team_id
-        self.color: pygame.Color = color
+        self.color: str = color
         self.active_pieces: list[Piece] = []
         self.captured_pieces: list[Piece] = []
 
     def __str__(self):
-        if self.color == (0, 0, 0):
+        if self.color == BLACK:
             return 'Black Player'
-        elif self.color == (255, 255, 255):
+        elif self.color == WHITE:
             return 'White Player'
         else:
             raise ValueError('Invalid Color')
@@ -49,15 +39,14 @@ class Team:
         """
         return self.color == piece.color
 
-    def set_king_id(self, king_id):
-        self.king_id = king_id
+    def set_king_pid(self, king):
+        self.king = king
 
-    def set_king_in_check(self, board, cond):
-        king: King = board.get_pieces_by_id(self.king_id)
-        king.set_in_check(cond)
+    def set_king_in_check(self, cond):
+        self.get_king().set_in_check(cond)
 
-    def get_king_id(self):
-        return self.king_id
+    def get_king(self):
+        return self.king
 
     def get_active_pieces(self):
         return self.active_pieces
