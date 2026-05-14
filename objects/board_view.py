@@ -93,7 +93,7 @@ class BoardView:
             square, (col_index * SQUARE_SIZE, row_index * SQUARE_SIZE)
         )
 
-    def draw_all_pieces(self, grid: list[list[int | None]], views_by_piece):
+    def draw_all_pieces(self, views_by_square):
         """
         Draws all pieces located on the board
 
@@ -102,12 +102,10 @@ class BoardView:
 
         This method assumes all surface details are correctly implemented for any given piece
         """
-        for row in range(SQUARE_COUNT):
-            for col in range(SQUARE_COUNT):
-                contents = grid[row][col]
-                if contents is not None:
-                    piece_view = views_by_piece[contents]
-                    self.draw_piece(piece_view, (row, col))
+
+        for square in views_by_square:
+            piece_view = views_by_square[square]
+            self.draw_piece(piece_view, square)
 
     def get_abs_pos(self, square: tuple[int, int]) -> tuple[int, int]:
         """
@@ -128,7 +126,7 @@ class BoardView:
         row, col = square
         if not self.in_bounds((row, col)):
             raise ValueError(
-                f'No position corresponds to grid position ({row}, {col})'
+                f'Square ({row}, {col}) is out of bounds'
             )
         return (
             BOARD_POS_X + col * SQUARE_SIZE,

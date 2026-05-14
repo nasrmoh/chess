@@ -15,6 +15,7 @@ from .constants import (
     COMMAND_CLEAR_HIGHLIGHTS,
     COMMAND_BUILD_PROMO,
     COMMAND_TEARDOWN_PROMO,
+    COMMAND_INITIALIZE_GAME_UI,
     PAYLOAD_COLOR,
     PAYLOAD_SQUARES,
     GREEN,
@@ -61,6 +62,16 @@ class GameState:
         self.current_player: Team = self.light_team
         self.other_player: Team = self.dark_team
         self.game_is_running = True
+
+    def get_init_commands(self):
+        commands = []
+        pieces_by_square = {}
+        for piece in (self.dark_team.active_pieces + self.light_team.active_pieces):
+            square = piece.pos
+            pieces_by_square[square] = (piece.kind, piece.color)
+        command = {COMMAND_INITIALIZE_GAME_UI : pieces_by_square}
+        commands.append(command)
+        return commands
 
     def setup_dark_pieces(self):
         pieces = []

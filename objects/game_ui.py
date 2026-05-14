@@ -13,10 +13,10 @@ from .constants import (
     COMMAND_CLEAR_HIGHLIGHTS,
     COMMAND_BUILD_PROMO,
     COMMAND_TEARDOWN_PROMO,
+    COMMAND_INITIALIZE_GAME_UI,
     PAYLOAD_COLOR,
     PAYLOAD_SQUARES,
 )
-from .game_state import GameState
 from .promotion_menu import PromotionMenu
 from .piece_view import PieceView
 import pygame
@@ -26,43 +26,45 @@ from .board_view import BoardView
 
 
 class GameUI:
-    def __init__(self, game_state: GameState):
+    def __init__(self, init_commands):
         # windows done
         # display done
         # view dict
-        self.game_state = game_state
         self.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption('Chess')
         self.window.fill(GREY)   # ui
-        self.sprite_cache = self.__build_sprite_cache(game_state)
-        self.views_by_piece = self.__build_views_by_piece()
+        init_command = init_commands[0]
+        pieces_by_square = init_command[COMMAND_INITIALIZE_GAME_UI]
+        self.sprite_cache = self.__build_sprite_cache(pieces_by_square)
+        self.views_by_square = self.__build_views_by_square(pieces_by_square)
         self.board_view = BoardView(self.window)
         self.promotion_menu = None
 
     def __build_sprite_cache(
-        self, game_state: GameState
+        self, pieces_by_square
     ) -> dict[tuple[str, str], Surface]:
         sprite_cache = {}
-        for piece in game_state.light_team.active_pieces + game_state.dark_team.active_pieces:   # may cause problems
-            piece_kind = piece.kind
-            piece_color = piece.color
-            if piece_color == WHITE:
-                surface = pygame.image.load(f'./Assets/{piece_kind}_white.png')
-            else:
-                surface = pygame.image.load(f'./Assets/{piece_kind}_black.png')
-            surface = pygame.transform.smoothscale(
-                surface, (SQUARE_SIZE, SQUARE_SIZE)
-            )
-            sprite_cache[(piece_kind, piece_color)] = surface
+        for square in pieces_by_square:
+            piece_kind, piece_color = pieces_by_square[square]
+            if (piece_kind, piece_color) not in sprite_cache:
+                if piece_color == WHITE:
+                    surface = pygame.image.load(f'./Assets/{piece_kind}_white.png')
+                else:
+                    surface = pygame.image.load(f'./Assets/{piece_kind}_black.png')
+                surface = pygame.transform.smoothscale(
+                    surface, (SQUARE_SIZE, SQUARE_SIZE)
+                )
+                sprite_cache[(piece_kind, piece_color)] = surface
         return sprite_cache
 
-    def __build_views_by_piece(self):
-        views_by_pieces = {}
-        for piece in self.game_state.light_team.active_pieces + self.game_state.dark_team.active_pieces:
-            views_by_pieces[piece] = PieceView(
-                self.sprite_cache[piece.kind, piece.color]
+    def __build_views_by_square(self, pieces_by_square):
+        views_by_square = {}
+        for square in pieces_by_square:
+            (kind, color) = pieces_by_square[square]
+            views_by_square[square] = PieceView(
+                self.sprite_cache[kind, color]
             )
-        return views_by_pieces
+        return views_by_square
 
     def handle_events(
         self,
@@ -104,7 +106,7 @@ class GameUI:
             self.board_view.highlighted_squares
         )
         self.board_view.draw_all_pieces(
-            self.game_state.board.grid, self.views_by_piece
+             self.views_by_square
         )  # draw all pieces onto the board
         if self.promotion_menu:
             self.board_view.draw_menu(self.promotion_menu)

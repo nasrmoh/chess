@@ -6,7 +6,8 @@ from .game_ui import GameUI
 class Game:
     def __init__(self):
         self.state = GameState()
-        self.ui = GameUI(self.state)
+        init_commands = self.state.get_init_commands()
+        self.ui = GameUI(init_commands)
         self.clock = pygame.time.Clock()
 
 
