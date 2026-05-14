@@ -1,11 +1,12 @@
 from .constants import (
-    BOARDPOSX,
-    BOARDPOSY,
+    BOARD_POS_X,
+    BOARD_POS_Y,
     BOARD_SIDE_LENGTH,
     SQUARE_SIZE,
     BLACK,
     GREY,
     WHITE,
+    PROMOTION_SELECTOR
 )
 import pygame
 
@@ -61,7 +62,7 @@ class PromotionMenu:
 
     def get_valid_promotion_option(
         self, mouse_pos: tuple[int, int]
-    ) -> int | None:
+    ) -> str | None:
         """
         Checks if a valid promotion was selected, and if so returns the selected option as an index value that corresponds
         with the values available in the self.img_options attribute, otherwise returns None.
@@ -73,17 +74,17 @@ class PromotionMenu:
             int | None: Returns an integer if a valid option was selected, otherwise None.
         """
         mouse_x, mouse_y = mouse_pos
-        local_x = mouse_x - BOARDPOSX
-        local_y = mouse_y - BOARDPOSY
+        local_x = mouse_x - BOARD_POS_X
+        local_y = mouse_y - BOARD_POS_Y
         if not self.rect.collidepoint(local_x, local_y):
             return None
 
-        offset_x = mouse_x - (BOARDPOSX + self.x)
+        offset_x = mouse_x - (BOARD_POS_X + self.x)
         # selection = int((mouse_x - self.x) // SQUARE_SIZE)
         selection = int((offset_x) // SQUARE_SIZE)
         count = len(self.image_options)
         if 0 <= selection < count:
-            return selection
+            return PROMOTION_SELECTOR[selection]
         else:
             return None
 

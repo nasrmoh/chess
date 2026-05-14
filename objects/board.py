@@ -40,6 +40,9 @@ class GameBoard:
         return grid
 
     def place_piece(self, piece: Piece):
+        """
+        Used for setting up pieces on the board, not to be used to move a piece
+        """
         row, col = piece.pos
         if not self.in_bounds((row, col)):
             raise IndexError(f"Board position out of bounds: ({row}, {col})")
@@ -63,9 +66,9 @@ class GameBoard:
             raise ValueError("Invalid row or column")
         return self.grid[row][col]
 
-    def generate_pseudo_legal_moves(self, piece: Piece, from_square: tuple[int, int]):
+    def generate_pseudo_legal_moves(self, piece: Piece):
         if piece is not None:
-            pseudo_legal_moves = piece.generate_pseudo_legal_moves(from_square, self)
+            pseudo_legal_moves = piece.generate_pseudo_legal_moves(self)
             return pseudo_legal_moves
         else:
             return None
@@ -73,7 +76,6 @@ class GameBoard:
     def generate_legal_moves(
         self,
         piece: Piece | None,
-        from_square: tuple[int, int],
         team: Team,
         enemy: Team,
     ) -> list[tuple[int, int]]:
@@ -83,7 +85,7 @@ class GameBoard:
         is_king = type(piece) is King
         legal_moves = []
         # first generate valid moves.
-        pseudo_legal_moves = piece.generate_pseudo_legal_moves(from_square, self)
+        pseudo_legal_moves = piece.generate_pseudo_legal_moves(self)
         # now filter for legal moves
         for move in pseudo_legal_moves:
             ghost_piece = copy(piece)
@@ -91,7 +93,7 @@ class GameBoard:
                 self.square_count, self.clone_grid()
             )
             # apply the move
-            ghost_board.move_piece(ghost_piece, from_square, move)
+            ghost_board.move_piece(ghost_piece, move)
             if not ghost_board.get_checking_pieces(
                 team, enemy, move, is_king
             ):  # king isn't in check
@@ -112,9 +114,7 @@ class GameBoard:
                 piece = self.get_square_contents((row, col))
                 if (piece is not None) and (piece.color == team.color):
                     found_count += 1
-                    move_dict[piece] = self.generate_legal_moves(
-                        piece, (row, col), team, enemy
-                    )
+                    move_dict[piece] = self.generate_legal_moves(piece, team, enemy)
         return move_dict
 
     def in_bounds(self, square: tuple[int, int]) -> bool:
@@ -124,7 +124,6 @@ class GameBoard:
     def move_piece(
         self,
         piece: Piece,
-        from_square: tuple[int, int],
         to_square: tuple[int, int],
     ) -> Piece | None:
         """
@@ -135,7 +134,7 @@ class GameBoard:
 
         # Move piece by updating piece parameters
 
-        old_row, old_col = from_square
+        old_row, old_col = piece.pos
         self.grid[old_row][old_col] = None
         dest_row, dest_col = to_square
         captured_piece = self.get_square_contents(to_square)
@@ -159,7 +158,7 @@ class GameBoard:
             TypeError: If the piece is not a pawn, or if the piece does not belong to the given player / team
             ValueError: If the dest_type is invalid
         """
-        row, col, color = piece.row, piece.col, piece.color
+        color = piece.color
         upgrade_selection = {
             ROOK: Rook,
             BISHOP: Bishop,
@@ -173,10 +172,10 @@ class GameBoard:
         if dest_kind not in upgrade_selection:
             raise ValueError(f"Invalid upgrade type : {dest_kind}")
         piece_class = upgrade_selection[dest_kind]
-        new_piece = piece_class(color, row, col, dest_kind)
-        self.grid[new_piece.row][new_piece.col] = new_piece
-        team.active_pieces.remove(piece)
-        team.active_pieces.append(new_piece)
+        new_piece = piece_class(color, piece.pos)
+        new_row, new_col = new_piece.pos
+        self.grid[new_row][new_col] = new_piece
+        team.replace_piece(piece, new_piece)
         return new_piece
 
 
@@ -203,9 +202,7 @@ class GameBoard:
                     found_count += 1
                     if (row, col) == move:  # king captures
                         continue
-                    enemy_pieces_moves = self.generate_pseudo_legal_moves(
-                        possible_enemy, (row, col)
-                    )
+                    enemy_pieces_moves = self.generate_pseudo_legal_moves(possible_enemy)
                     if kings_grid_pos in enemy_pieces_moves:
                         checking_pieces[possible_enemy] = (row, col)
         return checking_pieces

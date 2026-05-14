@@ -20,7 +20,6 @@ from .game_state import GameState
 from .promotion_menu import PromotionMenu
 from .piece_view import PieceView
 import pygame
-import sys
 from pygame.locals import *
 from pygame import Surface
 from .board_view import BoardView
