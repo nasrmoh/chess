@@ -40,6 +40,7 @@ from .constants import (
 from .board import GameBoard
 from .piece import Piece, Rook, Knight, Bishop, Queen, King, Pawn
 from .team import Team
+from .Move import Move, CapturedData
 import pygame
 import sys
 
@@ -49,17 +50,16 @@ class GameState:
         self.selected_square: tuple[int, int] | None = None
         # Selected square for highlighting and moving of pieces
         self.selected_piece : Piece | None = None
-        self.captured_piece: Piece | None = (
-            None  # captured pieces during current players turn
-        )
-        self.upgrade_type: str | None = None
+        self.captured_piece: Piece | None = None  # captured pieces during current players turn
+        self.current_move: Move | None = None # current move being built in a given turn
+        self.move_delta : list[Move] = [] # the actual move delta / historical record
+        self.promotion_type: str | None = None
         self.moved_piece : Piece | None = None
         self.from_square : tuple[int, int] | None = None
+        self.to_square : tuple[int, int] | None = None
         self.move_dict: dict[Piece, list[tuple[int, int]]] | None = None
         # a move dictionary for the legal moves a player can make
-        self.checking_pieces: dict[Piece, tuple[int, int]] = (
-            {}
-        )  # pieces of the other player that are checking the current player
+        self.checking_pieces: dict[Piece, tuple[int, int]] | None = None  # pieces of the other player that are checking the current player
         self.state: int = GAMESTART  # state variable
         self.board = GameBoard(SQUARE_COUNT)
         self.dark_team = Team(BLACK)  # Game Data
@@ -163,23 +163,24 @@ class GameState:
         elif self.state == SELECT_PROMOTION:
             commands.append({COMMAND_TEARDOWN_PROMO: None})
             piece_color = self.board.get_square_contents(self.selected_piece.pos).color
-            payload = {PAYLOAD_UPGRADE_TYPE: self.upgrade_type, PAYLOAD_TEAM_COLOR: piece_color, PAYLOAD_FROM_SQUARE : self.selected_square}
+            payload = {PAYLOAD_UPGRADE_TYPE: self.promotion_type, PAYLOAD_TEAM_COLOR: piece_color, PAYLOAD_FROM_SQUARE : self.selected_square}
             commands.append({COMMAND_PROMOTE_PAWN : payload})
         elif self.state == END_TURN:
-            # maybe have a command that resets game info?
-            self.set_captured_piece(None)  # game state info
-            self.set_selected_square(None)  # don't know about this one
-            self.set_selected_piece(None)
+            self.selected_square= None   # don't know about this one
+            self.selected_piece= None
+            self.captured_piece = None  # game state info
+            self.promotion_type = None
             self.moved_piece = None
             self.from_square = None
-            self.upgrade_type = None
+            self.to_square = None
+            self.move_dict = None  # game state info
+            self.checking_pieces = None  # game state info
+            self.current_move = None
             """
             self.other_player.king.set_in_check(
                 False
             )  # game state info
             """
-            self.checking_pieces = {}  # game state info
-            self.move_dict = {}  # game state info
         return commands
 
     def on_enter_new_state(self, state: int, actions):
@@ -259,6 +260,7 @@ class GameState:
                 )
                 self.other_player.active_pieces.remove(self.captured_piece)
                 self.other_player.lost_pieces.append(self.captured_piece)
+            self.move_delta.append(self.current_move)
         elif state == GAME_END:
             if self.current_player.king.get_check_status():
                 print(f"{self.other_player} Has Won, Game over")
@@ -326,9 +328,11 @@ class GameState:
                     if self.valid_move_selected((dest_row, dest_col), legal_moves):
                         self.from_square = self.selected_piece.pos
                         self.moved_piece = self.selected_piece
+                        self.to_square = (dest_row, dest_col)
                         self.captured_piece = self.board.move_piece(
                             self.selected_piece, (dest_row, dest_col),
                         )
+                        self.current_move = self.load_current_move()
                         if self.selected_piece.is_promotable():
                             print("You can promote your piece!")
                             return self.change_state_to(SELECT_PROMOTION, actions)
@@ -356,7 +360,8 @@ class GameState:
                 self.board.upgrade_piece(
                     self.current_player, self.selected_piece, new_type
                 )
-                self.upgrade_type = new_type
+                self.promotion_type = new_type
+                self.current_move = self.load_current_move(True)
                 return self.change_state_to(END_TURN, actions)
             else:
                 print("Invalid promotion option")
@@ -410,6 +415,21 @@ class GameState:
 
         """
         return possible_square != (None, None)
+
+    def load_current_move(self, promotion = False):
+        captured_data = None
+        promotion_kind = None
+        # castling_data = None
+        if self.captured_piece:
+            captured_data = CapturedData(self.captured_piece.kind, self.captured_piece.color, self.captured_piece.pos)
+        if promotion:
+                promotion_kind = self.promotion_type
+        return  Move(self.selected_piece.kind,
+                    self.selected_piece.color,
+                    self.from_square,
+                    self.to_square,
+                     captured_data,
+                    promotion_kind)
 
     def valid_move_selected(self, square, valid_moves):
         return square in valid_moves
