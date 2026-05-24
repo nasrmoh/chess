@@ -125,7 +125,7 @@ class GameBoard:
         self,
         piece: Piece,
         to_square: tuple[int, int],
-    ) -> Piece | None:
+    ) -> (Piece, Piece | None):
         """
         applies a legal move onto the board, note this method assumes that the move is legal
         Returns:

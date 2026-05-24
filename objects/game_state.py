@@ -16,8 +16,11 @@ from .constants import (
     COMMAND_BUILD_PROMO,
     COMMAND_TEARDOWN_PROMO,
     COMMAND_INITIALIZE_GAME_UI,
+    COMMAND_MOVE_PIECE,
+    COMMAND_PROMOTE_PAWN,
     PAYLOAD_COLOR,
     PAYLOAD_SQUARES,
+    PAYLOAD_UPGRADE_TYPE,
     GREEN,
     RED,
     GOLD,
@@ -32,7 +35,7 @@ from .constants import (
     BISHOP,
     QUEEN,
     KING,
-    PAWN,
+    PAWN, PAYLOAD_FROM_SQUARE, PAYLOAD_TO_SQUARE, PAYLOAD_TEAM_COLOR,
 )
 from .board import GameBoard
 from .piece import Piece, Rook, Knight, Bishop, Queen, King, Pawn
@@ -49,6 +52,9 @@ class GameState:
         self.captured_piece: Piece | None = (
             None  # captured pieces during current players turn
         )
+        self.upgrade_type: str | None = None
+        self.moved_piece : Piece | None = None
+        self.from_square : tuple[int, int] | None = None
         self.move_dict: dict[Piece, list[tuple[int, int]]] | None = None
         # a move dictionary for the legal moves a player can make
         self.checking_pieces: dict[Piece, tuple[int, int]] = (
@@ -117,8 +123,8 @@ class GameState:
         ## hook-dependent methods, i.e., the on_enter_new_state method.
         ## To handle changes when entering a new state
         if actions[ACTION_QUIT]:
-            pygame.quit()
             sys.exit()
+            pygame.quit() # for some reason this doesn't want to work anymore.
         commands = []
         if self.state == GAMESTART:
             commands = self.handle_game_start(actions)
@@ -136,12 +142,12 @@ class GameState:
 
     def change_state_to(self, new_state: int, actions):
         commands = []
-        commands += self.on_exit_current_state()
+        commands += self.on_exit_state()
         self.state = new_state
         commands += self.on_enter_new_state(self.state, actions)
         return commands
 
-    def on_exit_current_state(self):
+    def on_exit_state(self):
         commands = []
         if self.state == GAMESTART:
             pass
@@ -151,13 +157,22 @@ class GameState:
             pass
         elif self.state == SELECT_MOVE:
             commands.append({COMMAND_CLEAR_HIGHLIGHTS: None})
+            if self.moved_piece:
+                payload = {PAYLOAD_FROM_SQUARE: self.from_square, PAYLOAD_TO_SQUARE: self.moved_piece.pos}
+                commands.append({COMMAND_MOVE_PIECE : payload})
         elif self.state == SELECT_PROMOTION:
             commands.append({COMMAND_TEARDOWN_PROMO: None})
+            piece_color = self.board.get_square_contents(self.selected_piece.pos).color
+            payload = {PAYLOAD_UPGRADE_TYPE: self.upgrade_type, PAYLOAD_TEAM_COLOR: piece_color, PAYLOAD_FROM_SQUARE : self.selected_square}
+            commands.append({COMMAND_PROMOTE_PAWN : payload})
         elif self.state == END_TURN:
             # maybe have a command that resets game info?
             self.set_captured_piece(None)  # game state info
             self.set_selected_square(None)  # don't know about this one
             self.set_selected_piece(None)
+            self.moved_piece = None
+            self.from_square = None
+            self.upgrade_type = None
             """
             self.other_player.king.set_in_check(
                 False
@@ -309,6 +324,8 @@ class GameState:
                 if self.valid_square_selected(actions[ACTION_SELECTED_SQUARE]):
                     dest_row, dest_col = actions[ACTION_SELECTED_SQUARE]
                     if self.valid_move_selected((dest_row, dest_col), legal_moves):
+                        self.from_square = self.selected_piece.pos
+                        self.moved_piece = self.selected_piece
                         self.captured_piece = self.board.move_piece(
                             self.selected_piece, (dest_row, dest_col),
                         )
@@ -339,6 +356,7 @@ class GameState:
                 self.board.upgrade_piece(
                     self.current_player, self.selected_piece, new_type
                 )
+                self.upgrade_type = new_type
                 return self.change_state_to(END_TURN, actions)
             else:
                 print("Invalid promotion option")
