@@ -1,37 +1,95 @@
 import pygame
 
-WINDOWWIDTH = 800
-WINDOWHEIGHT = 800
-WINDOWTOBOARDRATIO = 1
-SQUARECOUNT = 8
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 800
+WINDOW_TO_BOARD_RATIO = 1
+SQUARE_COUNT = 8
 ALPHA_FLAG = pygame.SRCALPHA
-BOARDSIDELENGTH = WINDOWWIDTH * WINDOWTOBOARDRATIO
-SQUARESIZE = int(BOARDSIDELENGTH / SQUARECOUNT)
-BOARDPOSX = (WINDOWWIDTH - BOARDSIDELENGTH) / 2
-BOARDPOSY = (WINDOWHEIGHT - BOARDSIDELENGTH) / 2
+BOARD_SIDE_LENGTH = WINDOW_WIDTH * WINDOW_TO_BOARD_RATIO
+SQUARE_SIZE = int(BOARD_SIDE_LENGTH / SQUARE_COUNT)
+BOARD_POS_X = (WINDOW_WIDTH - BOARD_SIDE_LENGTH) / 2
+BOARD_POS_Y = (WINDOW_HEIGHT - BOARD_SIDE_LENGTH) / 2
+FPS = 60
 EMPTY = None
 DIAGONALS = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 CARDINALS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-KNIGHT_OFFSET = [(-2, 1), (-2, -1), (2, 1), (2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)]
-PIECE_ROOK = "rook"
-PIECE_BISHOP = "bishop"
-PIECE_KNIGHT = "knight"
-PIECE_QUEEN = "queen"
-PIECE_PAWN = "pawn"
-DARKCOLOR = (102, 0, 0)
-LIGHTCOLOR = (185, 122, 87)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+KNIGHT_OFFSET = [
+    (-2, 1),
+    (-2, -1),
+    (2, 1),
+    (2, -1),
+    (1, 2),
+    (-1, 2),
+    (1, -2),
+    (-1, -2),
+]
+ROOK = "rook"
+BISHOP = "bishop"
+KNIGHT = "knight"
+QUEEN = "queen"
+PAWN = "pawn"
+KING = "king"
+
+
+DARK_COLOR = (102, 0, 0)
+LIGHT_COLOR = (185, 122, 87)
+WHITE = "white"
+BLACK = "black"
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 GOLD = (255, 215, 0)
 GREY = (119, 136, 153)
 BLUE = (0, 0, 255)
-STARTTURN = 0
-SELECTPIECE = 1
-SELECTMOVE = 2
-SELECTPROMOTION = 3
-ENDTURN = 4
-GAMEEND = 5
-BLACKPLAYER = 0
-WHITEPLAYER = 1
+INITIAL_POSITION = {
+    WHITE: {
+        ROOK: [(7, 0), (7, 7)],
+        KNIGHT: [(7, 1), (7, 6)],
+        BISHOP: [(7, 2), (7, 5)],
+        QUEEN: [(7, 3)],
+        KING: [(7, 4)],
+        PAWN: [(6, i) for i in range(8)],
+    },
+    BLACK: {
+        ROOK: [(0, 0), (0, 7)],
+        KNIGHT: [(0, 1), (0, 6)],
+        BISHOP: [(0, 2), (0, 5)],
+        QUEEN: [(0, 3)],
+        KING: [(0, 4)],
+        PAWN: [(1, i) for i in range(8)],
+    },
+}
+PROMOTION_SELECTOR = {
+    0 : ROOK,
+    1 : BISHOP,
+    2 : KNIGHT,
+    3 : QUEEN
+}
+GAMESTART = 0
+START_TURN = 1
+SELECT_PIECE = 2
+SELECT_MOVE = 3
+SELECT_PROMOTION = 4
+END_TURN = 5
+GAME_END = 6
+BLACK_PLAYER = 0
+WHITE_PLAYER = 1
+ACTION_QUIT = "quit"
+ACTION_MOUSE_PRESSED = "mouse_pressed"
+ACTION_SELECTED_SQUARE = "selected_square"
+ACTION_PROMOTION_OPTION = "promotion_option"
+COMMAND_HIGHLIGHT_SQUARES = "highlight_squares"
+COMMAND_CLEAR_HIGHLIGHTS = "clear_highlights"
+COMMAND_BUILD_PROMO = "build_promotion_menu"
+COMMAND_TEARDOWN_PROMO = "teardown_promo"
+COMMAND_INITIALIZE_GAME_UI = "initialize_game_ui"
+COMMAND_MOVE_PIECE = "move_piece"
+COMMAND_CAPTURE_PIECE = "capture_piece"
+COMMAND_PROMOTE_PAWN = "promote_pawn"
+PAYLOAD_COLOR = "payload_color"
+PAYLOAD_TEAM_COLOR = "payload_TEAM_color"
+PAYLOAD_SQUARES = "payload_squares"
+PAYLOAD_FROM_SQUARE = "payload_from_square"
+PAYLOAD_TO_SQUARE = "payload_to_square"
+PAYLOAD_CAPTURED_PIECE = "payload_captured_piece"
+PAYLOAD_UPGRADE_TYPE = "payload_upgrade_type"
+

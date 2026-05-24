@@ -1,11 +1,12 @@
 from .constants import (
-    BOARDPOSX,
-    BOARDPOSY,
-    BOARDSIDELENGTH,
-    SQUARESIZE,
+    BOARD_POS_X,
+    BOARD_POS_Y,
+    BOARD_SIDE_LENGTH,
+    SQUARE_SIZE,
     BLACK,
     GREY,
     WHITE,
+    PROMOTION_SELECTOR
 )
 import pygame
 
@@ -28,15 +29,17 @@ class PromotionMenu:
         rect (pygame.Rect): Position and size of the board
     """
 
-    def __init__(self, color: pygame.Color):
-        self.color: pygame.Color = color
+    def __init__(self, color: str):
+        self.color = color
         self.image_options: list[str] = self._build_img_options()
-        self.w: int = len(self.image_options) * SQUARESIZE
-        self.h: int = SQUARESIZE
-        self.y: int = 0.5 * BOARDSIDELENGTH - 0.5 * self.h
-        self.x: int = 0.5 * BOARDSIDELENGTH - 0.5 * self.w
+        self.w: int = len(self.image_options) * SQUARE_SIZE
+        self.h: int = SQUARE_SIZE
+        self.y: int = 0.5 * BOARD_SIDE_LENGTH - 0.5 * self.h
+        self.x: int = 0.5 * BOARD_SIDE_LENGTH - 0.5 * self.w
         self.surface: pygame.Surface = pygame.Surface((self.w, self.h))
-        self.rect: pygame.Rect = self.surface.get_rect(topleft=(self.x, self.y))
+        self.rect: pygame.Rect = self.surface.get_rect(
+            topleft=(self.x, self.y)
+        )
         self._draw_base_surface()
 
     def _build_img_options(self) -> list[str]:
@@ -51,20 +54,15 @@ class PromotionMenu:
 
         """
         options = []
-        if self.color == BLACK:
-            color_str = "black"
-        elif self.color == WHITE:
-            color_str = "white"
-        else:
-            raise TypeError(f"Invalid Color : {self.color}")
-
-        piece_types = ["rook", "bishop", "knight", "queen"]
+        piece_types = ['rook', 'bishop', 'knight', 'queen']
         options = []
         for piece in piece_types:
-            options.append(f"{piece}_{color_str}")
+            options.append(f'{piece}_{self.color}')
         return options
 
-    def get_valid_promotion_option(self, mouse_pos: tuple[int, int]) -> int | None:
+    def get_valid_promotion_option(
+        self, mouse_pos: tuple[int, int]
+    ) -> str | None:
         """
         Checks if a valid promotion was selected, and if so returns the selected option as an index value that corresponds
         with the values available in the self.img_options attribute, otherwise returns None.
@@ -76,17 +74,17 @@ class PromotionMenu:
             int | None: Returns an integer if a valid option was selected, otherwise None.
         """
         mouse_x, mouse_y = mouse_pos
-        local_x = mouse_x - BOARDPOSX
-        local_y = mouse_y - BOARDPOSY
+        local_x = mouse_x - BOARD_POS_X
+        local_y = mouse_y - BOARD_POS_Y
         if not self.rect.collidepoint(local_x, local_y):
             return None
 
-        offset_x = mouse_x - (BOARDPOSX + self.x)
-        # selection = int((mouse_x - self.x) // SQUARESIZE)
-        selection = int((offset_x) // SQUARESIZE)
+        offset_x = mouse_x - (BOARD_POS_X + self.x)
+        # selection = int((mouse_x - self.x) // SQUARE_SIZE)
+        selection = int((offset_x) // SQUARE_SIZE)
         count = len(self.image_options)
         if 0 <= selection < count:
-            return selection
+            return PROMOTION_SELECTOR[selection]
         else:
             return None
 
@@ -94,20 +92,20 @@ class PromotionMenu:
         """
         Creates the basic surface of the promotion menu.
 
-        Assumes that the self.surface attribute and the corrersponding image file paths exist
+        Assumes that the self.surface attribute and the corresponding image file paths exist
         """
         # we go through the board and for each square, we "blit" onto the board the current square.
         options_count = len(self.image_options)
         for i in range(options_count):
-            square = pygame.Surface((SQUARESIZE, SQUARESIZE))
+            square = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE))
             square.fill(GREY)
-            img = pygame.image.load(f"./Assets/{self.image_options[i]}.png")
-            img = pygame.transform.smoothscale(img, (SQUARESIZE, SQUARESIZE))
+            img = pygame.image.load(f'./Assets/{self.image_options[i]}.png')
+            img = pygame.transform.smoothscale(img, (SQUARE_SIZE, SQUARE_SIZE))
             square.blit(img, (0, 0))
-            self.surface.blit(square, (i * SQUARESIZE, 0))
+            self.surface.blit(square, (i * SQUARE_SIZE, 0))
 
     def get_piece_type(self, promotion_option: int) -> str:
         """
         Returns the type of the piece as a str
         """
-        return self.image_options[promotion_option].split(sep="_")[0]
+        return self.image_options[promotion_option].split(sep='_')[0]
