@@ -23,6 +23,7 @@ KNIGHT_OFFSET = [
     (1, -2),
     (-1, -2),
 ]
+
 ROOK = "rook"
 BISHOP = "bishop"
 KNIGHT = "knight"
@@ -58,6 +59,39 @@ INITIAL_POSITION = {
         PAWN: [(1, i) for i in range(8)],
     },
 }
+
+KING_SIDE = "king_side"
+QUEEN_SIDE = "queen_side"
+
+CASTLE_POSITION = {
+    WHITE : {
+        KING_SIDE : {
+            KING : (7, 6),
+            ROOK : (7, 5)
+        },
+        QUEEN_SIDE : {
+            KING : (7, 2),
+            ROOK : (7, 3)
+        }
+    },
+    BLACK : {
+        KING_SIDE : {
+            KING : (0, 6),
+            ROOK : (0, 5)
+        },
+        QUEEN_SIDE : {
+            KING : (0, 2),
+            ROOK : (0, 3)
+        }
+    }
+}
+
+KSK_COL = 6
+KSR_COL = 5
+QSK_COL = 2
+QSR_COL = 3
+
+
 PROMOTION_SELECTOR = {
     0 : ROOK,
     1 : BISHOP,
@@ -92,4 +126,8 @@ PAYLOAD_FROM_SQUARE = "payload_from_square"
 PAYLOAD_TO_SQUARE = "payload_to_square"
 PAYLOAD_CAPTURED_PIECE = "payload_captured_piece"
 PAYLOAD_UPGRADE_TYPE = "payload_upgrade_type"
+MOVE_NORMAL = "move_normal"
+MOVE_CAPTURE = "move_capture"
+MOVE_ENPASSANT = "move_enpassant"
+MOVE_CASTLE = "move_castle"
 

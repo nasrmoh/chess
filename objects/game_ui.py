@@ -133,9 +133,10 @@ class GameUI:
             elif command_type == COMMAND_TEARDOWN_PROMO:
                 self.teardown_promo_menu()
             elif command_type == COMMAND_MOVE_PIECE:
-                from_square = payload[PAYLOAD_FROM_SQUARE]
-                to_square = payload[PAYLOAD_TO_SQUARE]
-                self.update_piece_view(from_square, to_square)
+                for payload_entry in payload:
+                    from_square = payload_entry[PAYLOAD_FROM_SQUARE]
+                    to_square = payload_entry[PAYLOAD_TO_SQUARE]
+                    self.update_piece_view(from_square, to_square)
             elif command_type == COMMAND_PROMOTE_PAWN:
                 from_square = payload[PAYLOAD_FROM_SQUARE]
                 piece_type = payload[PAYLOAD_UPGRADE_TYPE]

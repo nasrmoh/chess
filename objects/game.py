@@ -3,6 +3,7 @@ import pygame
 from .game_state import  GameState
 from .game_ui import GameUI
 
+
 class Game:
     def __init__(self):
         self.state = GameState()
