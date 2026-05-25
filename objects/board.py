@@ -19,6 +19,7 @@ class GameBoard:
     ):
         self.square_count = square_count
         self.grid = self._create_board_grid()
+        self.attacked_squares = []
 
     @classmethod
     def ghost_for_simulation(cls, square_count, grid):
@@ -94,9 +95,8 @@ class GameBoard:
             )
             # apply the move
             ghost_board.move_piece(ghost_piece, move)
-            if not ghost_board.get_checking_pieces(
-                team, enemy, move, is_king
-            ):  # king isn't in check
+            attacked_squares, checking_pieces = ghost_board.get_board_threats(team, enemy, move, is_king)
+            if not checking_pieces:  # king isn't in check
                 legal_moves.append(move)
         # This is done by simulating the move and checking if the king is in check
         return legal_moves
@@ -138,9 +138,16 @@ class GameBoard:
         self.grid[old_row][old_col] = None
         dest_row, dest_col = to_square
         captured_piece = self.get_square_contents(to_square)
+        castled_rook = None
+        if type(piece) == King and abs(dest_col, old_col):
+            # we are castling
+            if dest_col < SQUARE_COUNT/2:
+                castled_rook = piece.qs_rook
+            else:
+                castled_rook = piece.ks_rook
         piece.update_after_move(to_square)
         self.grid[dest_row][dest_col] = piece
-        return captured_piece
+        return captured_piece, castled_rook
 
     def upgrade_piece(self, team: Team, piece: Piece, dest_kind: str) -> Piece:
         """
@@ -179,10 +186,12 @@ class GameBoard:
         return new_piece
 
 
-    def get_checking_pieces(
+    def get_board_threats(
         self, current_player: Team, enemy_team: Team, move=None, is_king=False
     ):
+        attacked_pieces = {}
         checking_pieces = {}
+        self.attacked_squares = []
         if is_king:
             kings_grid_pos = move
         else:
@@ -203,9 +212,11 @@ class GameBoard:
                     if (row, col) == move:  # king captures
                         continue
                     enemy_pieces_moves = self.generate_pseudo_legal_moves(possible_enemy)
+                    self.attacked_squares += enemy_pieces_moves
+                    attacked_pieces[possible_enemy] = enemy_pieces_moves
                     if kings_grid_pos in enemy_pieces_moves:
                         checking_pieces[possible_enemy] = (row, col)
-        return checking_pieces
+        return attacked_pieces, checking_pieces
 
     def clone_grid(self):
         grid = []
@@ -215,3 +226,35 @@ class GameBoard:
                 grid_row.append(self.grid[row][col])
             grid.append(grid_row)
         return grid
+
+    def squares_between_empty(self, piece_one, piece_two):
+        # checks specifically columns between.
+        row_one, col_one = piece_one.pos
+        row_two, col_two = piece_two.pos
+        if col_one < col_two:
+            col_lower = col_one
+            col_upper = col_two
+        else:
+            col_lower = col_two
+            col_upper = col_one
+        for col in range(col_lower + 1, col_upper):
+            if self.get_square_contents((row_one, col)):
+                return False
+        return True
+
+    def path_safe(self, piece_one, piece_two):
+        row_one, col_one = piece_one.pos
+        row_two, col_two = piece_two.pos
+        if col_one < col_two:
+            col_lower = col_one
+            col_upper = col_two
+        else:
+            col_lower = col_two
+            col_upper = col_one
+        for col in range(col_lower + 1, col_upper):
+            if not self.square_safe((row_one, col)):
+                return False
+        return True
+
+    def square_safe(self, square):
+        return square not in self.attacked_squares

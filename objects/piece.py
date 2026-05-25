@@ -6,6 +6,7 @@ from .constants import (
     DIAGONALS,
     CARDINALS,
     KNIGHT_OFFSET,
+    KS_COL, QS_COL,
     PAWN, KNIGHT, ROOK, KING, BISHOP, QUEEN
 )
 if TYPE_CHECKING:
@@ -17,6 +18,7 @@ class Piece(ABC):
     def __init__(self, color: str, pos : tuple[int, int], has_moved = False):
         self.color = color
         self.has_moved = has_moved
+        self.is_active = True
         self.pos = pos
         self.kind = ""
 
@@ -51,6 +53,9 @@ class Piece(ABC):
 
     def is_promotable(self) -> bool:
         return False
+
+    def captured(self):
+        self.is_active = False
 
 
 class SlidingPiece(Piece):
@@ -216,10 +221,12 @@ class Queen(SlidingPiece):
 
 
 class King(Piece):
-    def __init__(self, color: str, pos : tuple[int, int]):
+    def __init__(self, color: str, pos : tuple[int, int], ks_rook : Rook, qs_rook : Rook):
         super().__init__(color, pos)
         self.in_check = False
         self.kind = KING
+        self.ks_rook = ks_rook
+        self.qs_rook = qs_rook
 
     def set_in_check(self, value):
         assert type(value) is bool
@@ -243,4 +250,18 @@ class King(Piece):
                     possible_piece
                 ):
                     pseudo_legal_moves.append((new_row, new_col))
+
+        # castling moves
+
+
+        if not self.in_check and not self.has_moved:
+            new_row = self.pos[0]
+            if self.ks_rook.is_active and not self.ks_rook.has_moved:
+                if board.squares_between_empty(self, self.ks_rook):
+                    if board.path_safe(self, self.ks_rook):
+                        pseudo_legal_moves.append((new_row, KS_COL))
+            if self.qs_rook.is_active and not self.qs_rook.has_moved:
+                if board.squares_between_empty(self, self.qs_rook):
+                    if board.path_safe(self, self.qs_rook):
+                        pseudo_legal_moves.append((new_row, QS_COL))
         return pseudo_legal_moves

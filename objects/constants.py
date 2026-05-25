@@ -23,6 +23,8 @@ KNIGHT_OFFSET = [
     (1, -2),
     (-1, -2),
 ]
+KS_COL = 6
+QS_COL = 2
 ROOK = "rook"
 BISHOP = "bishop"
 KNIGHT = "knight"

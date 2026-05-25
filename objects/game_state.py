@@ -51,6 +51,7 @@ class GameState:
         # Selected square for highlighting and moving of pieces
         self.selected_piece : Piece | None = None
         self.captured_piece: Piece | None = None  # captured pieces during current players turn
+        self.castled_rook: Rook | None = None
         self.current_move: Move | None = None # current move being built in a given turn
         self.move_delta : list[Move] = [] # the actual move delta / historical record
         self.promotion_type: str | None = None
@@ -59,6 +60,7 @@ class GameState:
         self.to_square : tuple[int, int] | None = None
         self.move_dict: dict[Piece, list[tuple[int, int]]] | None = None
         # a move dictionary for the legal moves a player can make
+        self.attacked_pieces: dict[Piece, tuple[int, int]] | None = None  # all moves the enemy can make.
         self.checking_pieces: dict[Piece, tuple[int, int]] | None = None  # pieces of the other player that are checking the current player
         self.state: int = GAMESTART  # state variable
         self.board = GameBoard(SQUARE_COUNT)
@@ -81,16 +83,18 @@ class GameState:
 
     def setup_dark_pieces(self):
         pieces = []
-        pieces.append(Rook(self.dark_team.color, INITIAL_POSITION[BLACK][ROOK][0]))
+        qs_rook = Rook(self.dark_team.color, INITIAL_POSITION[BLACK][ROOK][0])
+        ks_rook = Rook(self.dark_team.color, INITIAL_POSITION[BLACK][ROOK][1])
+        pieces.append(qs_rook)
+        pieces.append(ks_rook)
         pieces.append(Knight(self.dark_team.color, INITIAL_POSITION[BLACK][KNIGHT][0]))
         pieces.append(Bishop(self.dark_team.color, INITIAL_POSITION[BLACK][BISHOP][0]))
         pieces.append(Queen(self.dark_team.color, INITIAL_POSITION[BLACK][QUEEN][0]))
-        king = King(self.dark_team.color, INITIAL_POSITION[BLACK][KING][0])
-        self.dark_team.king = king
-        pieces.append(king)
         pieces.append(Bishop(self.dark_team.color, INITIAL_POSITION[BLACK][BISHOP][1]))
         pieces.append(Knight(self.dark_team.color, INITIAL_POSITION[BLACK][KNIGHT][1]))
-        pieces.append(Rook(self.dark_team.color, INITIAL_POSITION[BLACK][ROOK][1]))
+        king = King(self.dark_team.color, INITIAL_POSITION[BLACK][KING][0], ks_rook, qs_rook)
+        self.dark_team.king = king
+        pieces.append(king)
         for square in INITIAL_POSITION[BLACK][PAWN]:
             pieces.append(Pawn(self.dark_team.color, square))
         self.dark_team.active_pieces += pieces
@@ -99,16 +103,18 @@ class GameState:
 
     def setup_light_pieces(self):
         pieces = []
-        pieces.append(Rook(self.light_team.color, INITIAL_POSITION[WHITE][ROOK][0]))
+        qs_rook = Rook(self.light_team.color, INITIAL_POSITION[WHITE][ROOK][0])
+        ks_rook = Rook(self.light_team.color, INITIAL_POSITION[WHITE][ROOK][1])
+        pieces.append(qs_rook)
+        pieces.append(ks_rook)
         pieces.append(Knight(self.light_team.color, INITIAL_POSITION[WHITE][KNIGHT][0]))
         pieces.append(Bishop(self.light_team.color, INITIAL_POSITION[WHITE][BISHOP][0]))
         pieces.append(Queen(self.light_team.color, INITIAL_POSITION[WHITE][QUEEN][0]))
-        king = King(self.light_team.color, INITIAL_POSITION[WHITE][KING][0])
+        king = King(self.light_team.color, INITIAL_POSITION[WHITE][KING][0], ks_rook, qs_rook)
         self.light_team.king = king
         pieces.append(king)
         pieces.append(Bishop(self.light_team.color, INITIAL_POSITION[WHITE][BISHOP][1]))
         pieces.append(Knight(self.light_team.color, INITIAL_POSITION[WHITE][KNIGHT][1]))
-        pieces.append(Rook(self.light_team.color, INITIAL_POSITION[WHITE][ROOK][1]))
         for square in INITIAL_POSITION[WHITE][PAWN]:
             pieces.append(Pawn(self.light_team.color, square))
         self.light_team.active_pieces += pieces
@@ -174,8 +180,10 @@ class GameState:
             self.from_square = None
             self.to_square = None
             self.move_dict = None  # game state info
+            self.attacked_pieces = None
             self.checking_pieces = None  # game state info
             self.current_move = None
+            self.castled_rook = None
             """
             self.other_player.king.set_in_check(
                 False
@@ -193,7 +201,7 @@ class GameState:
         """
         commands = []
         if state == START_TURN:
-            self.checking_pieces = self.board.get_checking_pieces(
+            self.attacked_pieces, self.checking_pieces = self.board.get_board_threats(
                 self.current_player, self.other_player
             )
             if self.checking_pieces:
@@ -258,6 +266,7 @@ class GameState:
                 print(
                     f"{str(self.current_player).split()[0]} captures {str(self.other_player).split()[0]}'s {self.captured_piece.kind}"
                 )
+                self.captured_piece.captured()
                 self.other_player.active_pieces.remove(self.captured_piece)
                 self.other_player.lost_pieces.append(self.captured_piece)
             self.move_delta.append(self.current_move)
