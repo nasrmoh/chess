@@ -21,6 +21,7 @@ class GameBoard:
         self.square_count = square_count
         self.grid = self._create_board_grid()
         self.attacked_squares = []
+        self.double_jumped_pawn = None
 
     @classmethod
     def ghost_for_simulation(cls, square_count, grid):
@@ -156,14 +157,13 @@ class GameBoard:
             #since the rook moved, we need to update the rook
             payload_piece.update_after_move(rook_to_square)
 
-        # move the (main) piece
-        self.set_square_contents(move.from_square, None)
-        self.set_square_contents(move.to_square, piece)
-
-
-        # now we update the main piece
-        piece.update_after_move(move.to_square)
-        return payload_piece
+        old_row, old_col = piece.pos
+        self.grid[old_row][old_col] = None
+        dest_row, dest_col = to_square
+        captured_piece = self.get_square_contents(to_square)
+        piece.update_after_move(to_square)
+        self.grid[dest_row][dest_col] = piece
+        return captured_piece
 
     def upgrade_piece(self, team: Team, piece: Piece, dest_kind: str) -> Piece:
         """
