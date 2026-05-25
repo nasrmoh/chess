@@ -29,7 +29,9 @@ class Team:
         self.king = king
 
     def set_king_in_check(self, cond):
+
         self.get_king().set_in_check(cond)
+
 
     def get_king(self):
         return self.king

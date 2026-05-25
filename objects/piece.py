@@ -6,12 +6,13 @@ from .constants import (
     DIAGONALS,
     CARDINALS,
     KNIGHT_OFFSET,
-    KS_COL, QS_COL,
-    PAWN, KNIGHT, ROOK, KING, BISHOP, QUEEN
+    KSK_COL, QSK_COL,
+    PAWN, KNIGHT, ROOK, KING, BISHOP, QUEEN, MOVE_NORMAL, MOVE_CASTLE, CASTLE_POSITION, KING_SIDE, QUEEN_SIDE
 )
 if TYPE_CHECKING:
     from .board import GameBoard
 from abc import ABC, abstractmethod
+from .move import Move
 
 
 class Piece(ABC):
@@ -23,7 +24,7 @@ class Piece(ABC):
         self.kind = ""
 
     @abstractmethod
-    def generate_pseudo_legal_moves(self, board : GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board : GameBoard) -> list[Move]:
         """
            See `is_pseudo_legal_move` for the definition of a pseudo-legal move
         """
@@ -69,14 +70,14 @@ class SlidingPiece(Piece):
         super().__init__(color, pos)
 
     @abstractmethod
-    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         pass
 
     def get_sliding_moves(
         self,
         board : GameBoard,
         directions: list[tuple[int, int]],
-    ) -> list[tuple[int, int]]:
+    ) -> list[Move]:
         """
         Generates pseudo-legal moves for sliding pieces (rook, bishop, queen) by extending in each direction until blocked.
         Includes the first enemy square, stops at allies.
@@ -91,10 +92,10 @@ class SlidingPiece(Piece):
                 if (
                     possible_piece is None
                 ):  # no piece id found, i.e., empty square then add the move
-                    pseudo_legal_moves.append((new_row, new_col))
+                    pseudo_legal_moves.append(Move(self.pos, (new_row, new_col)))
                 elif self.is_enemy(possible_piece):
                     pseudo_legal_moves.append(
-                        (new_row, new_col)
+                        Move(self.pos, (new_row, new_col))
                     )  # enemy, add, then stop sliding
                     break
                 else:
@@ -110,7 +111,7 @@ class Pawn(Piece):
         super().__init__(color, pos)
         self.kind = PAWN
 
-    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         """
         Includes :
             Single and double jumps assuming the path is empty and a piece has not moved for the latter
@@ -124,7 +125,7 @@ class Pawn(Piece):
 
         # single jump moves
         if board.in_bounds((one_forward, col)) and board.is_empty((one_forward, col)):
-            pseudo_legal_moves.append((one_forward, col))
+            pseudo_legal_moves.append(Move(self.pos, (one_forward, col)))
 
             # double jump moves (check only if there is a pseudo-legal single move)
             if (
@@ -132,7 +133,7 @@ class Pawn(Piece):
                 and board.is_empty((two_forward, col))
                 and board.in_bounds((two_forward, col))
             ):
-                pseudo_legal_moves.append((two_forward, col))
+                pseudo_legal_moves.append(Move(self.pos, (two_forward, col)))
 
         # Diagonals
         for dh in [-1, 1]:
@@ -144,7 +145,7 @@ class Pawn(Piece):
                 if (possible_piece is not None) and self.is_enemy(
                     possible_piece
                 ):
-                    pseudo_legal_moves.append((one_forward, new_col))
+                    pseudo_legal_moves.append(Move(self.pos, (one_forward, new_col)))
         return pseudo_legal_moves
 
     def is_promotable(self) -> bool:
@@ -166,7 +167,7 @@ class Knight(Piece):
         super().__init__(color, pos)
         self.kind = KNIGHT
 
-    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         row, col = self.pos
         pseudo_legal_moves = []
         for dr, dc in KNIGHT_OFFSET:
@@ -180,7 +181,7 @@ class Knight(Piece):
                 if (possible_piece is None) or self.is_enemy(
                     possible_piece
                 ):
-                    pseudo_legal_moves.append((new_row, new_col))
+                    pseudo_legal_moves.append(Move(self.pos, (new_row, new_col), MOVE_NORMAL, None))
         return pseudo_legal_moves
 
 
@@ -189,7 +190,7 @@ class Bishop(SlidingPiece):
         super().__init__(color, pos)
         self.kind = BISHOP
 
-    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         """
         Generates the diagonal sliding moves via the get_sliding_moves method.
         """
@@ -201,7 +202,7 @@ class Rook(SlidingPiece):
         super().__init__(color, pos)
         self.kind = ROOK
 
-    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         """
         Generates the cardinal sliding moves via the get_sliding_moves method.
         """
@@ -213,7 +214,7 @@ class Queen(SlidingPiece):
         super().__init__(color, pos)
         self.kind = QUEEN
 
-    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         """
         Generates the Queens movements combining digonal and cardinal sliding moves.
         """
@@ -235,7 +236,7 @@ class King(Piece):
     def get_check_status(self):
         return self.in_check
 
-    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[tuple[int, int]]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         row, col = self.pos
         pseudo_legal_moves = []
         # Directional Moves
@@ -249,19 +250,27 @@ class King(Piece):
                 if (possible_piece is None) or self.is_enemy(
                     possible_piece
                 ):
-                    pseudo_legal_moves.append((new_row, new_col))
+                    pseudo_legal_moves.append(Move(self.pos, (new_row, new_col), MOVE_NORMAL, None))
 
         # castling moves
 
-
         if not self.in_check and not self.has_moved:
-            new_row = self.pos[0]
             if self.ks_rook.is_active and not self.ks_rook.has_moved:
                 if board.squares_between_empty(self, self.ks_rook):
                     if board.path_safe(self, self.ks_rook):
-                        pseudo_legal_moves.append((new_row, KS_COL))
+                        # king side rooks from and to squares
+                        castle_from_square = self.ks_rook.pos
+                        castle_to_square = CASTLE_POSITION[self.color][KING_SIDE][ROOK]
+                        payload = [castle_from_square, castle_to_square]
+                        king_to_square = CASTLE_POSITION[self.color][KING_SIDE][KING]
+                        pseudo_legal_moves.append(Move(self.pos, king_to_square, MOVE_CASTLE, payload))
+
             if self.qs_rook.is_active and not self.qs_rook.has_moved:
                 if board.squares_between_empty(self, self.qs_rook):
                     if board.path_safe(self, self.qs_rook):
-                        pseudo_legal_moves.append((new_row, QS_COL))
+                        castle_from_square = self.qs_rook.pos
+                        castle_to_square = CASTLE_POSITION[self.color][QUEEN_SIDE][ROOK]
+                        payload = [castle_from_square, castle_to_square]
+                        king_to_square = CASTLE_POSITION[self.color][QUEEN_SIDE][KING]
+                        pseudo_legal_moves.append(Move(self.pos, king_to_square, MOVE_CASTLE, payload))
         return pseudo_legal_moves
