@@ -160,6 +160,10 @@ class GameBoard:
 
         self.set_square_contents(piece.pos, None)
         piece.update_after_move(move.to_square)
+        if isinstance(piece, Pawn) and abs(move.to_square[0] - move.from_square[0]) == 2:
+            self.double_jumped_pawn = piece
+        else:
+            self.double_jumped_pawn = None
         self.set_square_contents(move.to_square, piece)
         return payload_piece
 

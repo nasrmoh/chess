@@ -14,14 +14,14 @@ from .constants import (
     COMMAND_BUILD_PROMO,
     COMMAND_TEARDOWN_PROMO,
     COMMAND_INITIALIZE_GAME_UI,
-    COMMAND_MOVE_PIECE,
+    COMMAND_APPLY_MOVE,
     COMMAND_PROMOTE_PAWN,
     PAYLOAD_COLOR,
     PAYLOAD_TEAM_COLOR,
     PAYLOAD_SQUARES,
     PAYLOAD_FROM_SQUARE,
     PAYLOAD_TO_SQUARE,
-    PAYLOAD_UPGRADE_TYPE
+    PAYLOAD_UPGRADE_TYPE, COMMAND_DELETE_ENPASSANTED_PIECE
 )
 from .promotion_menu import PromotionMenu
 from .piece_view import PieceView
@@ -132,7 +132,7 @@ class GameUI:
                 self.build_promotion_menu(color)
             elif command_type == COMMAND_TEARDOWN_PROMO:
                 self.teardown_promo_menu()
-            elif command_type == COMMAND_MOVE_PIECE:
+            elif command_type == COMMAND_APPLY_MOVE:
                 for payload_entry in payload:
                     from_square = payload_entry[PAYLOAD_FROM_SQUARE]
                     to_square = payload_entry[PAYLOAD_TO_SQUARE]
@@ -142,6 +142,8 @@ class GameUI:
                 piece_type = payload[PAYLOAD_UPGRADE_TYPE]
                 piece_color = payload[PAYLOAD_TEAM_COLOR]
                 self.upgrade_piece_view(from_square, piece_type, piece_color)
+            elif command_type == COMMAND_DELETE_ENPASSANTED_PIECE:
+                self.delete_piece_view(payload)
 
 
 
@@ -161,3 +163,6 @@ class GameUI:
                 self.sprite_cache[kind, color]
         )
         self.views_by_square[from_square] = new_piece_view
+
+    def delete_piece_view(self, from_square):
+        self.views_by_square.pop(from_square)

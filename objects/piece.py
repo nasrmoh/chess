@@ -111,7 +111,7 @@ class Pawn(Piece):
     def __init__(self, color: str, pos : tuple[int, int]):
         super().__init__(color, pos)
         self.kind = PAWN
-        self.double_jumped_last = False
+        self.double_jumped = False
 
     def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         """
@@ -156,7 +156,7 @@ class Pawn(Piece):
             new_col = col + dh
             if board.in_bounds((row, new_col)) and not board.is_empty((row, new_col)):
                if board.double_jumped_pawn == board.get_square_contents((row, new_col)) and self.is_enemy(board.double_jumped_pawn):
-                   pseudo_legal_moves.append(Move(self.pos, (row, new_col), MOVE_ENPASSANT))
+                   pseudo_legal_moves.append(Move(self.pos, (row + dv, new_col), MOVE_ENPASSANT, (row, new_col)))
 
         return pseudo_legal_moves
 
