@@ -285,3 +285,4 @@ class GameBoard:
                 return move
         raise ValueError
 
+
