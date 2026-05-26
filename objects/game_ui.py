@@ -29,6 +29,7 @@ import pygame
 from pygame.locals import *
 from pygame import Surface
 from .board_view import BoardView
+import sys
 
 
 class GameUI:
@@ -87,8 +88,8 @@ class GameUI:
         for event in pygame.event.get():
             if event.type == QUIT:
                 actions[ACTION_QUIT] = True
-                # pygame.quit()
-                # sys.exit()
+                pygame.quit()
+                sys.exit()
             if event.type == MOUSEBUTTONDOWN:
                 actions[ACTION_MOUSE_PRESSED] = True
                 mouse_pos = event.pos

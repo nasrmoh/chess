@@ -299,6 +299,8 @@ class GameState:
            return self.change_state_to(GAME_END, actions)
         elif self.game_counter == 50:
             return self.change_state_to(GAME_END, actions)
+        elif self.insufficient_material():
+            return self.change_state_to(GAME_END, actions)
         else:
             return self.change_state_to(SELECT_PIECE, actions)
 
@@ -510,3 +512,40 @@ class GameState:
             if value:
                 return False
         return True
+
+    def insufficient_material(self):
+        cnt_light = len(self.light_team.active_pieces)
+        cnt_dark = len(self.dark_team.active_pieces)
+        tot_cnt = cnt_light + cnt_dark
+        if tot_cnt == 2: # king and king only:
+            return True
+        elif tot_cnt == 3:
+            if cnt_light > cnt_dark:
+                bigger = self.light_team.active_pieces
+            else:
+                bigger = self.dark_team.active_pieces
+            for piece in bigger:
+                if piece.kind in (KNIGHT, BISHOP):
+                    return True # king and king + (Bishop or Knight)
+            return False
+        elif tot_cnt == 4:
+            found_light_bishop = False
+            found_dark_bishop = False
+            light_bishop = None
+            dark_bishop = None
+            for piece in self.light_team.active_pieces:
+                if piece.kind == BISHOP:
+                    light_bishop = piece
+                    found_light_bishop = True
+            for piece in self.dark_team.active_pieces:
+                if piece.kind == BISHOP:
+                    dark_bishop = piece
+                    found_dark_bishop = True
+            if found_dark_bishop and found_light_bishop:
+                row_light, col_light = light_bishop.pos
+                row_dark, col_dark = dark_bishop.pos
+                if ((row_light + col_light) % 2) == ((row_dark + col_dark) % 2):
+                    return True # king + bishop and king + bishop where bishops are on the same color square
+        return False
+
+
