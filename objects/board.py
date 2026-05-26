@@ -24,10 +24,11 @@ class GameBoard:
         self.double_jumped_pawn = None
 
     @classmethod
-    def ghost_for_simulation(cls, square_count, grid):
+    def ghost_for_simulation(cls, square_count, grid, double_jumped_pawn):
         ghostboard = cls.__new__(cls)
         ghostboard.square_count = square_count
         ghostboard.grid = grid
+        ghostboard.double_jumped_pawn = double_jumped_pawn
         return ghostboard
 
     def _create_board_grid(self) -> list[list[Piece | None]]:
@@ -97,7 +98,7 @@ class GameBoard:
         for move in pseudo_legal_moves:
             ghost_piece = copy(piece)
             ghost_board = GameBoard.ghost_for_simulation(
-                self.square_count, self.clone_grid()
+                self.square_count, self.clone_grid(), copy(self.double_jumped_pawn)
             )
             # apply the move
             ghost_board.apply_move(ghost_piece, move)
@@ -157,13 +158,10 @@ class GameBoard:
             #since the rook moved, we need to update the rook
             payload_piece.update_after_move(rook_to_square)
 
-        old_row, old_col = piece.pos
-        self.grid[old_row][old_col] = None
-        dest_row, dest_col = to_square
-        captured_piece = self.get_square_contents(to_square)
-        piece.update_after_move(to_square)
-        self.grid[dest_row][dest_col] = piece
-        return captured_piece
+        self.set_square_contents(piece.pos, None)
+        piece.update_after_move(move.to_square)
+        self.set_square_contents(move.to_square, piece)
+        return payload_piece
 
     def upgrade_piece(self, team: Team, piece: Piece, dest_kind: str) -> Piece:
         """
