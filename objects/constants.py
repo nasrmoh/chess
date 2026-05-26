@@ -98,13 +98,13 @@ PROMOTION_SELECTOR = {
     2 : KNIGHT,
     3 : QUEEN
 }
-GAMESTART = 0
-START_TURN = 1
-SELECT_PIECE = 2
-SELECT_MOVE = 3
-SELECT_PROMOTION = 4
-END_TURN = 5
-GAME_END = 6
+GAME_START = "game_start"
+START_TURN = "start_turn"
+SELECT_PIECE = "select_piece"
+SELECT_MOVE = "select_move"
+SELECT_PROMOTION = "select_promotion"
+END_TURN = "end_turn"
+GAME_END = "game_end"
 BLACK_PLAYER = "player_one"
 WHITE_PLAYER = "player_two"
 ACTION_QUIT = "quit"
