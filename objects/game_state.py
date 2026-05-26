@@ -16,7 +16,7 @@ from .constants import (
     COMMAND_BUILD_PROMO,
     COMMAND_TEARDOWN_PROMO,
     COMMAND_INITIALIZE_GAME_UI,
-    COMMAND_MOVE_PIECE,
+    COMMAND_APPLY_MOVE,
     COMMAND_PROMOTE_PAWN,
     PAYLOAD_COLOR,
     PAYLOAD_SQUARES,
@@ -35,7 +35,8 @@ from .constants import (
     BISHOP,
     QUEEN,
     KING,
-    PAWN, PAYLOAD_FROM_SQUARE, PAYLOAD_TO_SQUARE, PAYLOAD_TEAM_COLOR, MOVE_ENPASSANT, MOVE_CAPTURE, MOVE_CASTLE
+    PAWN, PAYLOAD_FROM_SQUARE, PAYLOAD_TO_SQUARE, PAYLOAD_TEAM_COLOR, MOVE_ENPASSANT, MOVE_CAPTURE, MOVE_CASTLE,
+    COMMAND_DELETE_ENPASSANTED_PIECE,
 )
 from .board import GameBoard
 from .piece import Piece, Rook, Knight, Bishop, Queen, King, Pawn
@@ -165,12 +166,13 @@ class GameState:
         elif self.state == SELECT_MOVE:
             commands.append({COMMAND_CLEAR_HIGHLIGHTS: None})
             if self.moving_piece:
-
                 payload = [{PAYLOAD_FROM_SQUARE: self.move.from_square, PAYLOAD_TO_SQUARE: self.move.to_square}]
                 if self.move.kind == MOVE_CASTLE:
                     rook_from_square, rook_to_square = self.move.payload
                     payload.append({PAYLOAD_FROM_SQUARE: rook_from_square, PAYLOAD_TO_SQUARE: rook_to_square})
-                commands.append({COMMAND_MOVE_PIECE : payload})
+                if self.move.kind == MOVE_ENPASSANT:
+                    commands.append({COMMAND_DELETE_ENPASSANTED_PIECE : self.move.payload})
+                commands.append({COMMAND_APPLY_MOVE : payload})
 
         elif self.state == SELECT_PROMOTION:
             commands.append({COMMAND_TEARDOWN_PROMO: None})
