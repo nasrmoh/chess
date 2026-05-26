@@ -6,10 +6,22 @@ from .constants import (
     DIAGONALS,
     CARDINALS,
     KNIGHT_OFFSET,
-    KSK_COL, QSK_COL,
-    PAWN, KNIGHT, ROOK, KING, BISHOP, QUEEN, MOVE_NORMAL, MOVE_CASTLE, CASTLE_POSITION, KING_SIDE, QUEEN_SIDE,
-    MOVE_ENPASSANT
+    KSK_COL,
+    QSK_COL,
+    PAWN,
+    KNIGHT,
+    ROOK,
+    KING,
+    BISHOP,
+    QUEEN,
+    MOVE_NORMAL,
+    MOVE_CASTLE,
+    CASTLE_POSITION,
+    KING_SIDE,
+    QUEEN_SIDE,
+    MOVE_ENPASSANT,
 )
+
 if TYPE_CHECKING:
     from .board import GameBoard
 from abc import ABC, abstractmethod
@@ -17,7 +29,7 @@ from .move import Move
 
 
 class Piece(ABC):
-    def __init__(self, color: str, pos : tuple[int, int], has_moved = False):
+    def __init__(self, color: str, pos: tuple[int, int], has_moved=False):
         self.color = color
         self.has_moved = has_moved
         self.is_active = True
@@ -25,13 +37,13 @@ class Piece(ABC):
         self.kind = ""
 
     @abstractmethod
-    def generate_pseudo_legal_moves(self, board : GameBoard) -> list[Move]:
+    def generate_pseudo_legal_moves(self, board: GameBoard) -> list[Move]:
         """
-           See `is_pseudo_legal_move` for the definition of a pseudo-legal move
+        See `is_pseudo_legal_move` for the definition of a pseudo-legal move
         """
         pass
 
-    def update_after_move(self, to_square : tuple[int, int]):
+    def update_after_move(self, to_square: tuple[int, int]):
         if not self.has_moved:
             self.has_moved = True
         self.pos = to_square
@@ -39,11 +51,11 @@ class Piece(ABC):
     def is_pseudo_legal_move(
         self,
         dest_square: tuple[int, int],
-        board : GameBoard,
+        board: GameBoard,
     ) -> bool:
         """
-            A move is pseudo-legal if it is within bounds of the board, and it is not blocked by an ally,
-            does not account for checks.
+        A move is pseudo-legal if it is within bounds of the board, and it is not blocked by an ally,
+        does not account for checks.
         """
         return dest_square in self.generate_pseudo_legal_moves(board)
 
@@ -67,7 +79,7 @@ class SlidingPiece(Piece):
     subclasses.
     """
 
-    def __init__(self, color: str, pos : tuple[int, int]):
+    def __init__(self, color: str, pos: tuple[int, int]):
         super().__init__(color, pos)
 
     @abstractmethod
@@ -76,7 +88,7 @@ class SlidingPiece(Piece):
 
     def get_sliding_moves(
         self,
-        board : GameBoard,
+        board: GameBoard,
         directions: list[tuple[int, int]],
     ) -> list[Move]:
         """
@@ -108,7 +120,7 @@ class SlidingPiece(Piece):
 
 
 class Pawn(Piece):
-    def __init__(self, color: str, pos : tuple[int, int]):
+    def __init__(self, color: str, pos: tuple[int, int]):
         super().__init__(color, pos)
         self.kind = PAWN
         self.double_jumped = False
@@ -144,30 +156,35 @@ class Pawn(Piece):
                 (one_forward, new_col)
             ):
                 possible_piece = board.get_square_contents((one_forward, new_col))
-                if (possible_piece is not None) and self.is_enemy(
-                    possible_piece
-                ):
+                if (possible_piece is not None) and self.is_enemy(possible_piece):
                     pseudo_legal_moves.append(Move(self.pos, (one_forward, new_col)))
 
-
         # En-Passant
-            # check left and right
+        # check left and right
         for dh in [-1, 1]:
             new_col = col + dh
             if board.in_bounds((row, new_col)) and not board.is_empty((row, new_col)):
-               if board.double_jumped_pawn == board.get_square_contents((row, new_col)) and self.is_enemy(board.double_jumped_pawn):
-                   pseudo_legal_moves.append(Move(self.pos, (row + dv, new_col), MOVE_ENPASSANT, (row, new_col)))
+                if board.double_jumped_pawn == board.get_square_contents(
+                    (row, new_col)
+                ) and self.is_enemy(board.double_jumped_pawn):
+                    pseudo_legal_moves.append(
+                        Move(
+                            self.pos,
+                            (row + dv, new_col),
+                            MOVE_ENPASSANT,
+                            (row, new_col),
+                        )
+                    )
 
         return pseudo_legal_moves
 
-    def update_after_move(self, to_square : tuple[int, int]):
+    def update_after_move(self, to_square: tuple[int, int]):
         if not self.has_moved:
             self.has_moved = True
             if abs(to_square[0] - self.pos[0]):
                 # we know its double jumped
                 self.double_jumped = True
         self.pos = to_square
-
 
     def is_promotable(self) -> bool:
         """
@@ -178,13 +195,13 @@ class Pawn(Piece):
         light_main_rank = 7
         if (self.color == WHITE and row == dark_main_rank) or (
             self.color == BLACK and row == light_main_rank
-            ):
-                return True
+        ):
+            return True
         return False
 
 
 class Knight(Piece):
-    def __init__(self, color: str, pos : tuple[int, int]):
+    def __init__(self, color: str, pos: tuple[int, int]):
         super().__init__(color, pos)
         self.kind = KNIGHT
 
@@ -199,15 +216,15 @@ class Knight(Piece):
                 possible_piece = board.get_square_contents(
                     (new_row, new_col)
                 )  # check if there is a piece to be captured
-                if (possible_piece is None) or self.is_enemy(
-                    possible_piece
-                ):
-                    pseudo_legal_moves.append(Move(self.pos, (new_row, new_col), MOVE_NORMAL, None))
+                if (possible_piece is None) or self.is_enemy(possible_piece):
+                    pseudo_legal_moves.append(
+                        Move(self.pos, (new_row, new_col), MOVE_NORMAL, None)
+                    )
         return pseudo_legal_moves
 
 
 class Bishop(SlidingPiece):
-    def __init__(self, color: str, pos : tuple[int, int]):
+    def __init__(self, color: str, pos: tuple[int, int]):
         super().__init__(color, pos)
         self.kind = BISHOP
 
@@ -231,7 +248,7 @@ class Rook(SlidingPiece):
 
 
 class Queen(SlidingPiece):
-    def __init__(self, color: str, pos : tuple[int, int]):
+    def __init__(self, color: str, pos: tuple[int, int]):
         super().__init__(color, pos)
         self.kind = QUEEN
 
@@ -243,7 +260,7 @@ class Queen(SlidingPiece):
 
 
 class King(Piece):
-    def __init__(self, color: str, pos : tuple[int, int], ks_rook : Rook, qs_rook : Rook):
+    def __init__(self, color: str, pos: tuple[int, int], ks_rook: Rook, qs_rook: Rook):
         super().__init__(color, pos)
         self.in_check = False
         self.kind = KING
@@ -268,10 +285,10 @@ class King(Piece):
             if board.in_bounds((new_row, new_col)):
                 # now validate
                 possible_piece = board.get_square_contents((new_row, new_col))
-                if (possible_piece is None) or self.is_enemy(
-                    possible_piece
-                ):
-                    pseudo_legal_moves.append(Move(self.pos, (new_row, new_col), MOVE_NORMAL, None))
+                if (possible_piece is None) or self.is_enemy(possible_piece):
+                    pseudo_legal_moves.append(
+                        Move(self.pos, (new_row, new_col), MOVE_NORMAL, None)
+                    )
 
         # castling moves
 
@@ -284,7 +301,9 @@ class King(Piece):
                         castle_to_square = CASTLE_POSITION[self.color][KING_SIDE][ROOK]
                         payload = [castle_from_square, castle_to_square]
                         king_to_square = CASTLE_POSITION[self.color][KING_SIDE][KING]
-                        pseudo_legal_moves.append(Move(self.pos, king_to_square, MOVE_CASTLE, payload))
+                        pseudo_legal_moves.append(
+                            Move(self.pos, king_to_square, MOVE_CASTLE, payload)
+                        )
 
             if self.qs_rook.is_active and not self.qs_rook.has_moved:
                 if board.squares_between_empty(self, self.qs_rook):
@@ -293,5 +312,7 @@ class King(Piece):
                         castle_to_square = CASTLE_POSITION[self.color][QUEEN_SIDE][ROOK]
                         payload = [castle_from_square, castle_to_square]
                         king_to_square = CASTLE_POSITION[self.color][QUEEN_SIDE][KING]
-                        pseudo_legal_moves.append(Move(self.pos, king_to_square, MOVE_CASTLE, payload))
+                        pseudo_legal_moves.append(
+                            Move(self.pos, king_to_square, MOVE_CASTLE, payload)
+                        )
         return pseudo_legal_moves

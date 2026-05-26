@@ -21,7 +21,8 @@ from .constants import (
     PAYLOAD_SQUARES,
     PAYLOAD_FROM_SQUARE,
     PAYLOAD_TO_SQUARE,
-    PAYLOAD_UPGRADE_TYPE, COMMAND_DELETE_ENPASSANTED_PIECE
+    PAYLOAD_UPGRADE_TYPE,
+    COMMAND_DELETE_ENPASSANTED_PIECE,
 )
 from .promotion_menu import PromotionMenu
 from .piece_view import PieceView
@@ -38,8 +39,8 @@ class GameUI:
         # display done
         # view dict
         self.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption('Chess')
-        self.window.fill(GREY)   # ui
+        pygame.display.set_caption("Chess")
+        self.window.fill(GREY)  # ui
         init_command = init_commands[0]
         pieces_by_square = init_command[COMMAND_INITIALIZE_GAME_UI]
         self.sprite_cache = self.__build_sprite_cache(pieces_by_square)
@@ -47,17 +48,15 @@ class GameUI:
         self.board_view = BoardView(self.window)
         self.promotion_menu = None
 
-    def __build_sprite_cache(
-        self, pieces_by_square
-    ) -> dict[tuple[str, str], Surface]:
+    def __build_sprite_cache(self, pieces_by_square) -> dict[tuple[str, str], Surface]:
         sprite_cache = {}
         for square in pieces_by_square:
             piece_kind, piece_color = pieces_by_square[square]
             if (piece_kind, piece_color) not in sprite_cache:
                 if piece_color == WHITE:
-                    surface = pygame.image.load(f'./Assets/{piece_kind}_white.png')
+                    surface = pygame.image.load(f"./Assets/{piece_kind}_white.png")
                 else:
-                    surface = pygame.image.load(f'./Assets/{piece_kind}_black.png')
+                    surface = pygame.image.load(f"./Assets/{piece_kind}_black.png")
                 surface = pygame.transform.smoothscale(
                     surface, (SQUARE_SIZE, SQUARE_SIZE)
                 )
@@ -68,9 +67,7 @@ class GameUI:
         views_by_square = {}
         for square in pieces_by_square:
             (kind, color) = pieces_by_square[square]
-            views_by_square[square] = PieceView(
-                self.sprite_cache[kind, color]
-            )
+            views_by_square[square] = PieceView(self.sprite_cache[kind, color])
         return views_by_square
 
     def handle_events(
@@ -94,26 +91,22 @@ class GameUI:
                 actions[ACTION_MOUSE_PRESSED] = True
                 mouse_pos = event.pos
                 if self.promotion_menu:
-                    actions[
-                        ACTION_PROMOTION_OPTION
-                    ] = self.promotion_menu.get_valid_promotion_option(
-                        mouse_pos
+                    actions[ACTION_PROMOTION_OPTION] = (
+                        self.promotion_menu.get_valid_promotion_option(mouse_pos)
                     )
                 else:
-                    actions[
-                        ACTION_SELECTED_SQUARE
-                    ] = self.board_view.mouse_pos_to_grid(mouse_pos)
+                    actions[ACTION_SELECTED_SQUARE] = self.board_view.mouse_pos_to_grid(
+                        mouse_pos
+                    )
 
         return actions
 
     def render(self, clock):
         clock.tick(FPS)
         self.board_view.draw_board()  # draw board onto the window
-        self.board_view.draw_all_highlights(
-            self.board_view.highlighted_squares
-        )
+        self.board_view.draw_all_highlights(self.board_view.highlighted_squares)
         self.board_view.draw_all_pieces(
-             self.views_by_square
+            self.views_by_square
         )  # draw all pieces onto the board
         if self.promotion_menu:
             self.board_view.draw_menu(self.promotion_menu)
@@ -146,8 +139,6 @@ class GameUI:
             elif command_type == COMMAND_DELETE_ENPASSANTED_PIECE:
                 self.delete_piece_view(payload)
 
-
-
     def build_promotion_menu(self, color):
         self.promotion_menu = PromotionMenu(color)
 
@@ -160,9 +151,7 @@ class GameUI:
         self.views_by_square[to_square] = piece_view
 
     def upgrade_piece_view(self, from_square, kind, color):
-        new_piece_view = PieceView(
-                self.sprite_cache[kind, color]
-        )
+        new_piece_view = PieceView(self.sprite_cache[kind, color])
         self.views_by_square[from_square] = new_piece_view
 
     def delete_piece_view(self, from_square):

@@ -1,6 +1,6 @@
 import pygame
 
-from .game_state import  GameState
+from .game_state import GameState
 from .game_ui import GameUI
 
 
@@ -10,7 +10,6 @@ class Game:
         init_commands = self.state.get_init_commands()
         self.ui = GameUI(init_commands)
         self.clock = pygame.time.Clock()
-
 
     def run(self):
         pygame.init()

@@ -6,7 +6,11 @@ from .constants import (
     ROOK,
     BISHOP,
     KNIGHT,
-    QUEEN, MOVE_NORMAL, MOVE_CAPTURE, MOVE_ENPASSANT, MOVE_CASTLE
+    QUEEN,
+    MOVE_NORMAL,
+    MOVE_CAPTURE,
+    MOVE_ENPASSANT,
+    MOVE_CASTLE,
 )
 from .piece import Piece, Pawn, Knight, Bishop, Rook, Queen, King
 from .team import Team
@@ -48,7 +52,9 @@ class GameBoard:
         Used for setting up pieces on the board, not to be used to move a piece
         """
         if not self.in_bounds(piece.pos):
-            raise IndexError(f"Board position out of bounds: ({piece.pos[0]}, {piece.pos[1]})")
+            raise IndexError(
+                f"Board position out of bounds: ({piece.pos[0]}, {piece.pos[1]})"
+            )
         if self.get_square_contents(piece.pos) is None:
             self.set_square_contents(piece.pos, piece)
         else:
@@ -68,7 +74,7 @@ class GameBoard:
             raise ValueError("Invalid row or column")
         return self.grid[row][col]
 
-    def set_square_contents(self, square: tuple[int, int], contents : Piece | None):
+    def set_square_contents(self, square: tuple[int, int], contents: Piece | None):
         row, col = square
         if not (0 <= row < SQUARE_COUNT and 0 <= col < SQUARE_COUNT):
             raise ValueError("Invalid row or column")
@@ -102,18 +108,20 @@ class GameBoard:
             )
             # apply the move
             ghost_board.apply_move(ghost_piece, move)
-            attacked_squares, checking_pieces = ghost_board.get_board_threats(team, enemy, move, is_king)
+            attacked_squares, checking_pieces = ghost_board.get_board_threats(
+                team, enemy, move, is_king
+            )
             if not checking_pieces:  # king isn't in check
-                if move.kind == MOVE_NORMAL and self.get_square_contents(move.to_square):
-                   move.set_kind(MOVE_CAPTURE)
-                   move.set_payload(move.to_square)
+                if move.kind == MOVE_NORMAL and self.get_square_contents(
+                    move.to_square
+                ):
+                    move.set_kind(MOVE_CAPTURE)
+                    move.set_payload(move.to_square)
                 legal_moves.append(move)
         # This is done by simulating the move and checking if the king is in check
         return legal_moves
 
-    def build_move_dict(
-        self, team: Team, enemy: Team
-    ) -> dict[Piece, Move]:
+    def build_move_dict(self, team: Team, enemy: Team) -> dict[Piece, Move]:
         move_dict = {}
         found_count = 0
         ally_count = team.get_count_active()
@@ -142,7 +150,7 @@ class GameBoard:
             Piece | None: Returns the auxiliary if the move kind is a capture, enpassant, or castling, otherwise None
         """
 
-        payload_piece = None # assume normal with no payload
+        payload_piece = None  # assume normal with no payload
         # handle special cases first
         if move.kind in [MOVE_CAPTURE, MOVE_ENPASSANT]:
             payload_piece = self.get_square_contents(move.payload)
@@ -155,12 +163,15 @@ class GameBoard:
             # we know that the square is empty, apply the move
             self.set_square_contents(rook_from_square, None)
             self.set_square_contents(rook_to_square, payload_piece)
-            #since the rook moved, we need to update the rook
+            # since the rook moved, we need to update the rook
             payload_piece.update_after_move(rook_to_square)
 
         self.set_square_contents(piece.pos, None)
         piece.update_after_move(move.to_square)
-        if isinstance(piece, Pawn) and abs(move.to_square[0] - move.from_square[0]) == 2:
+        if (
+            isinstance(piece, Pawn)
+            and abs(move.to_square[0] - move.from_square[0]) == 2
+        ):
             self.double_jumped_pawn = piece
         else:
             self.double_jumped_pawn = None
@@ -203,7 +214,6 @@ class GameBoard:
         team.replace_piece(piece, new_piece)
         return new_piece
 
-
     def get_board_threats(
         self, current_player: Team, enemy_team: Team, move=None, is_king=False
     ):
@@ -229,8 +239,12 @@ class GameBoard:
                     found_count += 1
                     if (row, col) == move:  # king captures
                         continue
-                    enemy_pieces_moves = self.generate_pseudo_legal_moves(possible_enemy)
-                    enemy_attacked_squares = [move.to_square for move in enemy_pieces_moves]
+                    enemy_pieces_moves = self.generate_pseudo_legal_moves(
+                        possible_enemy
+                    )
+                    enemy_attacked_squares = [
+                        move.to_square for move in enemy_pieces_moves
+                    ]
                     self.attacked_squares += enemy_attacked_squares
                     attacked_pieces[possible_enemy] = enemy_pieces_moves
                     if kings_grid_pos in enemy_attacked_squares:
@@ -278,11 +292,10 @@ class GameBoard:
     def square_safe(self, square):
         return square not in self.attacked_squares
 
-
-    def dest_square_to_move(self, to_square: tuple[int, int],  moves : list[Move]) -> Move:
+    def dest_square_to_move(
+        self, to_square: tuple[int, int], moves: list[Move]
+    ) -> Move:
         for move in moves:
             if move.to_square == to_square:
                 return move
         raise ValueError
-
-

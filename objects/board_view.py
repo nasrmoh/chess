@@ -12,7 +12,9 @@ from .constants import (
 
 
 class BoardView:
-    def __init__(self, window: pygame.Surface, light_color = LIGHT_COLOR, dark_color = DARK_COLOR):
+    def __init__(
+        self, window: pygame.Surface, light_color=LIGHT_COLOR, dark_color=DARK_COLOR
+    ):
         self.window = window
         self.light_color = light_color
         self.dark_color = dark_color
@@ -85,13 +87,13 @@ class BoardView:
         """
         if color is None:
             color = (
-                self.dark_color if (row_index + col_index) % 2 == 1 else self.light_color
+                self.dark_color
+                if (row_index + col_index) % 2 == 1
+                else self.light_color
             )
         square = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE))
         square.fill(color)
-        self.surface.blit(
-            square, (col_index * SQUARE_SIZE, row_index * SQUARE_SIZE)
-        )
+        self.surface.blit(square, (col_index * SQUARE_SIZE, row_index * SQUARE_SIZE))
 
     def draw_all_pieces(self, views_by_square):
         """
@@ -125,9 +127,7 @@ class BoardView:
         """
         row, col = square
         if not self.in_bounds((row, col)):
-            raise ValueError(
-                f'Square ({row}, {col}) is out of bounds'
-            )
+            raise ValueError(f"Square ({row}, {col}) is out of bounds")
         return (
             BOARD_POS_X + col * SQUARE_SIZE,
             BOARD_POS_Y + row * SQUARE_SIZE,
@@ -225,6 +225,4 @@ class BoardView:
         Must be called after background and piece surfaces are drawn
         """
         ## Perhaps move this method out of the board class and into the menu class
-        self.window.blit(
-            promo.surface, (promo.x + BOARD_POS_X, promo.y + BOARD_POS_Y)
-        )
+        self.window.blit(promo.surface, (promo.x + BOARD_POS_X, promo.y + BOARD_POS_Y))

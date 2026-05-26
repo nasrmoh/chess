@@ -64,26 +64,14 @@ KING_SIDE = "king_side"
 QUEEN_SIDE = "queen_side"
 
 CASTLE_POSITION = {
-    WHITE : {
-        KING_SIDE : {
-            KING : (7, 6),
-            ROOK : (7, 5)
-        },
-        QUEEN_SIDE : {
-            KING : (7, 2),
-            ROOK : (7, 3)
-        }
+    WHITE: {
+        KING_SIDE: {KING: (7, 6), ROOK: (7, 5)},
+        QUEEN_SIDE: {KING: (7, 2), ROOK: (7, 3)},
     },
-    BLACK : {
-        KING_SIDE : {
-            KING : (0, 6),
-            ROOK : (0, 5)
-        },
-        QUEEN_SIDE : {
-            KING : (0, 2),
-            ROOK : (0, 3)
-        }
-    }
+    BLACK: {
+        KING_SIDE: {KING: (0, 6), ROOK: (0, 5)},
+        QUEEN_SIDE: {KING: (0, 2), ROOK: (0, 3)},
+    },
 }
 
 KSK_COL = 6
@@ -92,12 +80,7 @@ QSK_COL = 2
 QSR_COL = 3
 
 
-PROMOTION_SELECTOR = {
-    0 : ROOK,
-    1 : BISHOP,
-    2 : KNIGHT,
-    3 : QUEEN
-}
+PROMOTION_SELECTOR = {0: ROOK, 1: BISHOP, 2: KNIGHT, 3: QUEEN}
 GAME_START = "game_start"
 START_TURN = "start_turn"
 SELECT_PIECE = "select_piece"
@@ -131,4 +114,3 @@ MOVE_NORMAL = "move_normal"
 MOVE_CAPTURE = "move_capture"
 MOVE_ENPASSANT = "move_enpassant"
 MOVE_CASTLE = "move_castle"
-

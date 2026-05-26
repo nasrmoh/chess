@@ -35,7 +35,13 @@ from .constants import (
     BISHOP,
     QUEEN,
     KING,
-    PAWN, PAYLOAD_FROM_SQUARE, PAYLOAD_TO_SQUARE, PAYLOAD_TEAM_COLOR, MOVE_ENPASSANT, MOVE_CAPTURE, MOVE_CASTLE,
+    PAWN,
+    PAYLOAD_FROM_SQUARE,
+    PAYLOAD_TO_SQUARE,
+    PAYLOAD_TEAM_COLOR,
+    MOVE_ENPASSANT,
+    MOVE_CAPTURE,
+    MOVE_CASTLE,
     COMMAND_DELETE_ENPASSANTED_PIECE,
 )
 from .board import GameBoard
@@ -50,21 +56,25 @@ import sys
 class GameState:
     def __init__(self):
         self.game_counter = 0
-        self.history_entry : HistoryEntry | None = None
-        self.move : Move | None = None
+        self.history_entry: HistoryEntry | None = None
+        self.move: Move | None = None
         self.selected_square: tuple[int, int] | None = None
         # Selected square for highlighting and moving of pieces
-        self.selected_piece : Piece | None = None
+        self.selected_piece: Piece | None = None
         self.auxiliary_piece: Piece | None = None  # captured piece or castled rook
-        self.delta_entry: Move | None = None # current move being built in a given turn
-        self.move_delta : list[Move] = [] # the actual move delta / historical record
+        self.delta_entry: Move | None = None  # current move being built in a given turn
+        self.move_delta: list[Move] = []  # the actual move delta / historical record
         self.promotion_type: str | None = None
-        self.moving_piece : Piece | None = None
-        self.to_square : tuple[int, int] | None = None
+        self.moving_piece: Piece | None = None
+        self.to_square: tuple[int, int] | None = None
         self.move_dict: dict[Piece, list[tuple[int, int]]] | None = None
         # a move dictionary for the legal moves a player can make
-        self.attacked_pieces: dict[Piece, tuple[int, int]] | None = None  # all moves the enemy can make.
-        self.checking_pieces: dict[Piece, tuple[int, int]] | None = None  # pieces of the other player that are checking the current player
+        self.attacked_pieces: dict[Piece, tuple[int, int]] | None = (
+            None  # all moves the enemy can make.
+        )
+        self.checking_pieces: dict[Piece, tuple[int, int]] | None = (
+            None  # pieces of the other player that are checking the current player
+        )
         self.state: int = GAME_START  # state variable
         self.board = GameBoard(SQUARE_COUNT)
         self.dark_team = Team(BLACK)  # Game Data
@@ -77,10 +87,10 @@ class GameState:
     def get_init_commands(self):
         commands = []
         pieces_by_square = {}
-        for piece in (self.dark_team.active_pieces + self.light_team.active_pieces):
+        for piece in self.dark_team.active_pieces + self.light_team.active_pieces:
             square = piece.pos
             pieces_by_square[square] = (piece.kind, piece.color)
-        command = {COMMAND_INITIALIZE_GAME_UI : pieces_by_square}
+        command = {COMMAND_INITIALIZE_GAME_UI: pieces_by_square}
         commands.append(command)
         return commands
 
@@ -95,7 +105,9 @@ class GameState:
         pieces.append(Queen(self.dark_team.color, INITIAL_POSITION[BLACK][QUEEN][0]))
         pieces.append(Bishop(self.dark_team.color, INITIAL_POSITION[BLACK][BISHOP][1]))
         pieces.append(Knight(self.dark_team.color, INITIAL_POSITION[BLACK][KNIGHT][1]))
-        king = King(self.dark_team.color, INITIAL_POSITION[BLACK][KING][0], ks_rook, qs_rook)
+        king = King(
+            self.dark_team.color, INITIAL_POSITION[BLACK][KING][0], ks_rook, qs_rook
+        )
         self.dark_team.king = king
         pieces.append(king)
         for square in INITIAL_POSITION[BLACK][PAWN]:
@@ -113,7 +125,9 @@ class GameState:
         pieces.append(Knight(self.light_team.color, INITIAL_POSITION[WHITE][KNIGHT][0]))
         pieces.append(Bishop(self.light_team.color, INITIAL_POSITION[WHITE][BISHOP][0]))
         pieces.append(Queen(self.light_team.color, INITIAL_POSITION[WHITE][QUEEN][0]))
-        king = King(self.light_team.color, INITIAL_POSITION[WHITE][KING][0], ks_rook, qs_rook)
+        king = King(
+            self.light_team.color, INITIAL_POSITION[WHITE][KING][0], ks_rook, qs_rook
+        )
         self.light_team.king = king
         pieces.append(king)
         pieces.append(Bishop(self.light_team.color, INITIAL_POSITION[WHITE][BISHOP][1]))
@@ -133,7 +147,7 @@ class GameState:
         ## To handle changes when entering a new state
         if actions[ACTION_QUIT]:
             sys.exit()
-            pygame.quit() # for some reason this doesn't want to work anymore.
+            pygame.quit()  # for some reason this doesn't want to work anymore.
         commands = []
         if self.state == GAME_START:
             commands = self.handle_game_start(actions)
@@ -167,22 +181,38 @@ class GameState:
         elif self.state == SELECT_MOVE:
             commands.append({COMMAND_CLEAR_HIGHLIGHTS: None})
             if self.moving_piece:
-                payload = [{PAYLOAD_FROM_SQUARE: self.move.from_square, PAYLOAD_TO_SQUARE: self.move.to_square}]
+                payload = [
+                    {
+                        PAYLOAD_FROM_SQUARE: self.move.from_square,
+                        PAYLOAD_TO_SQUARE: self.move.to_square,
+                    }
+                ]
                 if self.move.kind == MOVE_CASTLE:
                     rook_from_square, rook_to_square = self.move.payload
-                    payload.append({PAYLOAD_FROM_SQUARE: rook_from_square, PAYLOAD_TO_SQUARE: rook_to_square})
+                    payload.append(
+                        {
+                            PAYLOAD_FROM_SQUARE: rook_from_square,
+                            PAYLOAD_TO_SQUARE: rook_to_square,
+                        }
+                    )
                 if self.move.kind == MOVE_ENPASSANT:
-                    commands.append({COMMAND_DELETE_ENPASSANTED_PIECE : self.move.payload})
-                commands.append({COMMAND_APPLY_MOVE : payload})
+                    commands.append(
+                        {COMMAND_DELETE_ENPASSANTED_PIECE: self.move.payload}
+                    )
+                commands.append({COMMAND_APPLY_MOVE: payload})
 
         elif self.state == SELECT_PROMOTION:
             commands.append({COMMAND_TEARDOWN_PROMO: None})
             piece_color = self.board.get_square_contents(self.selected_piece.pos).color
-            payload = {PAYLOAD_UPGRADE_TYPE: self.promotion_type, PAYLOAD_TEAM_COLOR: piece_color, PAYLOAD_FROM_SQUARE : self.selected_square}
-            commands.append({COMMAND_PROMOTE_PAWN : payload})
+            payload = {
+                PAYLOAD_UPGRADE_TYPE: self.promotion_type,
+                PAYLOAD_TEAM_COLOR: piece_color,
+                PAYLOAD_FROM_SQUARE: self.selected_square,
+            }
+            commands.append({COMMAND_PROMOTE_PAWN: payload})
         elif self.state == END_TURN:
-            self.selected_square= None   # don't know about this one
-            self.selected_piece= None
+            self.selected_square = None  # don't know about this one
+            self.selected_piece = None
             self.auxiliary_piece = None  # game state info
             self.promotion_type = None
             self.moving_piece = None
@@ -225,7 +255,11 @@ class GameState:
                 command_highlight_attacking = {
                     COMMAND_HIGHLIGHT_SQUARES: {
                         PAYLOAD_COLOR: RED,
-                        PAYLOAD_SQUARES: [move.from_square for moves in self.checking_pieces.values() for move in moves]
+                        PAYLOAD_SQUARES: [
+                            move.from_square
+                            for moves in self.checking_pieces.values()
+                            for move in moves
+                        ],
                     }
                 }
                 square = self.current_player.get_king().pos
@@ -251,7 +285,9 @@ class GameState:
             command_highlight_potential_moves = {
                 COMMAND_HIGHLIGHT_SQUARES: {
                     PAYLOAD_COLOR: GREEN,
-                    PAYLOAD_SQUARES: [move.to_square for move in self.move_dict[self.selected_piece]]
+                    PAYLOAD_SQUARES: [
+                        move.to_square for move in self.move_dict[self.selected_piece]
+                    ],
                 }
             }
             command_highlight_selected_piece_square = {
@@ -267,7 +303,9 @@ class GameState:
             self.selected_square = actions[ACTION_SELECTED_SQUARE]
             self.selected_piece = self.board.get_square_contents(self.selected_square)
             assert self.selected_piece.is_promotable()
-            command_build_promotion_menu = {COMMAND_BUILD_PROMO: self.selected_piece.color}
+            command_build_promotion_menu = {
+                COMMAND_BUILD_PROMO: self.selected_piece.color
+            }
             commands.append(command_build_promotion_menu)
         elif state == END_TURN:
             if self.move.kind in [MOVE_CAPTURE, MOVE_ENPASSANT]:
@@ -296,7 +334,7 @@ class GameState:
 
     def handle_turn_start(self, actions):
         if self.move_dict and self.move_dict_is_empty():
-           return self.change_state_to(GAME_END, actions)
+            return self.change_state_to(GAME_END, actions)
         elif self.game_counter == 50:
             return self.change_state_to(GAME_END, actions)
         elif self.insufficient_material():
@@ -315,7 +353,9 @@ class GameState:
                 if not self.board.is_empty(valid_square):
                     self.selected_piece = self.board.get_square_contents(valid_square)
                     self.set_selected_square(valid_square)
-                    if self.selected_piece and self.current_player.owns(self.selected_piece):
+                    if self.selected_piece and self.current_player.owns(
+                        self.selected_piece
+                    ):
                         legal_moves = self.move_dict[self.selected_piece]
                         if legal_moves:
                             return self.change_state_to(SELECT_MOVE, actions)
@@ -350,12 +390,18 @@ class GameState:
             legal_moves = self.move_dict[self.selected_piece]
             if legal_moves:
                 if self.valid_square_selected(actions[ACTION_SELECTED_SQUARE]):
-                    if move := self.valid_move_selected(actions[ACTION_SELECTED_SQUARE], legal_moves):
-                        self.moving_piece = self.selected_piece # store
+                    if move := self.valid_move_selected(
+                        actions[ACTION_SELECTED_SQUARE], legal_moves
+                    ):
+                        self.moving_piece = self.selected_piece  # store
                         self.move = move
                         # now apply the move
-                        self.auxiliary_piece = self.board.apply_move(self.moving_piece, self.move)
-                        self.history_entry = self.build_history_entry(self.move, self.moving_piece, self.auxiliary_piece)
+                        self.auxiliary_piece = self.board.apply_move(
+                            self.moving_piece, self.move
+                        )
+                        self.history_entry = self.build_history_entry(
+                            self.move, self.moving_piece, self.auxiliary_piece
+                        )
                         if self.selected_piece.is_promotable():
                             print("You can promote your piece!")
                             return self.change_state_to(SELECT_PROMOTION, actions)
@@ -379,12 +425,14 @@ class GameState:
         """
         if actions[ACTION_MOUSE_PRESSED]:
             if actions[ACTION_PROMOTION_OPTION] is not None:
-                new_type =  actions[ACTION_PROMOTION_OPTION]
+                new_type = actions[ACTION_PROMOTION_OPTION]
                 self.board.upgrade_piece(
                     self.current_player, self.selected_piece, new_type
                 )
                 self.promotion_type = new_type
-                self.history_entry = self.build_history_entry(self.move, self.moving_piece, self.auxiliary_piece, True)
+                self.history_entry = self.build_history_entry(
+                    self.move, self.moving_piece, self.auxiliary_piece, True
+                )
                 return self.change_state_to(END_TURN, actions)
             else:
                 print("Invalid promotion option")
@@ -439,12 +487,10 @@ class GameState:
         """
         return possible_square != (None, None)
 
-    def build_history_entry(self, move,  moving_piece,  auxiliary, promotion = False):
+    def build_history_entry(self, move, moving_piece, auxiliary, promotion=False):
         captured_data = None
         promotion_kind = None
         castling_data = None
-
-
 
         if move.kind in [MOVE_ENPASSANT, MOVE_CAPTURE]:
             captured_data = CapturedData(move.kind, auxiliary.color, auxiliary.pos)
@@ -452,21 +498,22 @@ class GameState:
             rook_old_pos = move.payload[1]
             castling_data = CastlingData(auxiliary.color, auxiliary.pos, rook_old_pos)
         if promotion:
-                promotion_kind = self.promotion_type
-        return  HistoryEntry(self.selected_piece.kind,
-                    moving_piece.color,
-                    move.from_square,
-                    move.to_square,
-                    captured_data,
-                    promotion_kind,
-                    castling_data)
+            promotion_kind = self.promotion_type
+        return HistoryEntry(
+            self.selected_piece.kind,
+            moving_piece.color,
+            move.from_square,
+            move.to_square,
+            captured_data,
+            promotion_kind,
+            castling_data,
+        )
 
     def valid_move_selected(self, square, valid_moves) -> Move | None:
         for move in valid_moves:
             if move.to_square == square:
                 return move
         return None
-
 
     def get_mouse_pressed(self):
         return self.mouse_pressed
@@ -489,7 +536,6 @@ class GameState:
     def set_selected_square(self, square):
         self.selected_square = square
 
-
     def get_state(self):
         return self.state
 
@@ -502,9 +548,8 @@ class GameState:
     def print_current_player(self):
         if self.current_player == self.dark_team:
             return "Black Player"
-        else: #self.current_player == self.light_team:
+        else:  # self.current_player == self.light_team:
             return "White Player"
-
 
     def move_dict_is_empty(self):
         assert self.move_dict is not None
@@ -517,7 +562,7 @@ class GameState:
         cnt_light = len(self.light_team.active_pieces)
         cnt_dark = len(self.dark_team.active_pieces)
         tot_cnt = cnt_light + cnt_dark
-        if tot_cnt == 2: # king and king only:
+        if tot_cnt == 2:  # king and king only:
             return True
         elif tot_cnt == 3:
             if cnt_light > cnt_dark:
@@ -526,7 +571,7 @@ class GameState:
                 bigger = self.dark_team.active_pieces
             for piece in bigger:
                 if piece.kind in (KNIGHT, BISHOP):
-                    return True # king and king + (Bishop or Knight)
+                    return True  # king and king + (Bishop or Knight)
             return False
         elif tot_cnt == 4:
             found_light_bishop = False
@@ -545,7 +590,5 @@ class GameState:
                 row_light, col_light = light_bishop.pos
                 row_dark, col_dark = dark_bishop.pos
                 if ((row_light + col_light) % 2) == ((row_dark + col_dark) % 2):
-                    return True # king + bishop and king + bishop where bishops are on the same color square
+                    return True  # king + bishop and king + bishop where bishops are on the same color square
         return False
-
-
