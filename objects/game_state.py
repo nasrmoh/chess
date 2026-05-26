@@ -1,6 +1,6 @@
 from .constants import (
     SQUARE_COUNT,
-    GAMESTART,
+    GAME_START,
     START_TURN,
     SELECT_PIECE,
     SELECT_MOVE,
@@ -49,6 +49,7 @@ import sys
 
 class GameState:
     def __init__(self):
+        self.game_counter = 0
         self.history_entry : HistoryEntry | None = None
         self.move : Move | None = None
         self.selected_square: tuple[int, int] | None = None
@@ -64,7 +65,7 @@ class GameState:
         # a move dictionary for the legal moves a player can make
         self.attacked_pieces: dict[Piece, tuple[int, int]] | None = None  # all moves the enemy can make.
         self.checking_pieces: dict[Piece, tuple[int, int]] | None = None  # pieces of the other player that are checking the current player
-        self.state: int = GAMESTART  # state variable
+        self.state: int = GAME_START  # state variable
         self.board = GameBoard(SQUARE_COUNT)
         self.dark_team = Team(BLACK)  # Game Data
         self.light_team = Team(WHITE)  # Game Data
@@ -134,7 +135,7 @@ class GameState:
             sys.exit()
             pygame.quit() # for some reason this doesn't want to work anymore.
         commands = []
-        if self.state == GAMESTART:
+        if self.state == GAME_START:
             commands = self.handle_game_start(actions)
         elif self.state == START_TURN:
             commands = self.handle_turn_start(actions)
@@ -157,7 +158,7 @@ class GameState:
 
     def on_exit_state(self):
         commands = []
-        if self.state == GAMESTART:
+        if self.state == GAME_START:
             pass
         if self.state == START_TURN:
             pass
@@ -269,7 +270,7 @@ class GameState:
             command_build_promotion_menu = {COMMAND_BUILD_PROMO: self.selected_piece.color}
             commands.append(command_build_promotion_menu)
         elif state == END_TURN:
-            if self.move.kind in [MOVE_CAPTURE, MOVE_ENPASSANT] is not None:
+            if self.move.kind in [MOVE_CAPTURE, MOVE_ENPASSANT]:
                 captured_piece = self.auxiliary_piece
                 print(
                     f"{str(self.current_player).split()[0]} captures {str(self.other_player).split()[0]}'s {captured_piece.kind}"
@@ -278,6 +279,10 @@ class GameState:
                 self.other_player.active_pieces.remove(captured_piece)
                 self.other_player.lost_pieces.append(captured_piece)
             self.move_delta.append(self.history_entry)
+            if not self.history_entry.captured and self.history_entry.kind != PAWN:
+                self.game_counter += 1
+            else:
+                self.game_counter = 0
         elif state == GAME_END:
             if self.current_player.king.get_check_status():
                 print(f"{self.other_player} Has Won, Game over")
@@ -292,6 +297,8 @@ class GameState:
     def handle_turn_start(self, actions):
         if self.move_dict and self.move_dict_is_empty():
            return self.change_state_to(GAME_END, actions)
+        elif self.game_counter == 50:
+            return self.change_state_to(GAME_END, actions)
         else:
             return self.change_state_to(SELECT_PIECE, actions)
 

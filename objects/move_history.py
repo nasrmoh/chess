@@ -14,7 +14,7 @@ class CastlingData:
 
 @dataclass
 class HistoryEntry:
-    kind: str
+    kind: str # kind of piece
     color: str
     from_square: tuple[int, int]
     to_square: tuple[int, int]
