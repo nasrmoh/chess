@@ -1,0 +1,26 @@
+html{
+    box-sizing: border-box;
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+header{
+    background-color: lightgrey;
+}
+
+body{
+    background-color: lightslategray;
+    margin: 0;
+}
+
+.board{
+    width: 800px;
+    height: 800px;
+    margin: auto;
+    border: 20px solid black;
+    padding: 50px;
+
+    background-color: lightgray;
+}
