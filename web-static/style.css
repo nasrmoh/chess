@@ -2,6 +2,8 @@ html{
     box-sizing: border-box;
 }
 
+
+
 *, *::before, *::after {
     box-sizing: inherit;
 }
@@ -21,6 +23,38 @@ body{
     margin: auto;
     border: 20px solid black;
     padding: 50px;
-
     background-color: lightgray;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+}
+
+
+:root {
+    --light-square: #B97A57;
+    --dark-square: #660000;
+}
+
+.light{
+    background-color: var(--light-square);
+    color: white;
+}
+.dark{
+    background-color: var(--dark-square);
+    color: white;
+}
+
+.square{
+    position: relative;
+}
+
+.rank{
+    position: absolute;
+    top: 2px;
+    left: 2px;
+}
+.file {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
 }
