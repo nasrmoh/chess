@@ -17,16 +17,37 @@ body{
     margin: 0;
 }
 
+.game-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 50px;
+}
+
+
+.side-panel{
+    width: clamp(50px, 10vw, 100px);
+    background-color: white;
+    border: 10px grey solid;
+    flex-shrink: 1;
+    text-align: center;
+    overflow-wrap: break-word;
+}
+
 .board{
-    width: 800px;
-    height: 800px;
-    margin: auto;
-    border: 20px solid black;
-    padding: 50px;
+    width: clamp(200px, 85vw, 800px);
+    aspect-ratio: 1 / 1;
+
+    border: clamp(4px, 1vw, 16px) solid black;
+    padding: clamp(4px, 1vw, 16px);
+
+    font-size: clamp(8px, 3vw, 24px);
+
     background-color: lightgray;
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
+    flex-shrink: 1;
 }
 
 
